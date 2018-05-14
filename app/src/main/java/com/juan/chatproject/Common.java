@@ -1,14 +1,10 @@
 package com.juan.chatproject;
 
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
 
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.exceptions.WebsocketNotConnectedException;
-import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONException;
 import org.json.JSONObject;
 import io.socket.client.IO;

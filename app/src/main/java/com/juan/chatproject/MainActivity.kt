@@ -1,11 +1,9 @@
 package com.juan.chatproject
 
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import io.socket.client.IO
-import io.socket.client.Socket
-import io.socket.emitter.Emitter
-
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -14,10 +12,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Common.connectWebSocket()
-//        Common.setActivityConext(this)
-//        Common.setSocketStatus(true, true)
-//        Common.addNewMessageToServer("dsds", input.toString().trim({ it <= ' ' }))
+//        Common.connectWebSocket()
+
+        btnGoChat.setOnClickListener(){
+            this.startActivity(Intent(this@MainActivity, ChatWindowActivity::class.java))
+        }
 
     }
 }
