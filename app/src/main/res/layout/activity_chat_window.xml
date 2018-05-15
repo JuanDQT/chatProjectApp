@@ -7,7 +7,7 @@
     tools:context=".ChatWindowActivity">
 
     <com.stfalcon.chatkit.messages.MessagesList
-        android:id="@+id/messagesList"
+        android:id="@+id/chatList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         />

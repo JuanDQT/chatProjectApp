@@ -2,6 +2,8 @@ package com.juan.chatproject;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -18,7 +20,7 @@ import io.socket.emitter.Emitter;
 
 public class Common extends Application {
 
-    private static final String LOG_TAG = "TAGGED";
+    private static final String TAGGER = "TAGGER";
     private static Context mContext;
 
     private static final String IP = "192.168.1.116"; // 192.168.44.122
@@ -45,15 +47,37 @@ public class Common extends Application {
             socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    socket.emit("login", ID_USER);
+                    socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + ID_USER + "\" }");
                 }
 
             }).on("home", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
+
                     JSONObject obj = (JSONObject)args[0];
+
                     try {
-                        Log.i(LOG_TAG, "Esta es toda tu informacion: " + obj.getString("data"));
+                        Intent intent = new Intent("GET_MESSAGES");
+                        intent.putExtra("DATA_TO_ACTIVITY", obj.getString("data"));
+                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+
+                    JSONObject obj = (JSONObject)args[0];
+
+                    try {
+                        Log.e(TAGGER, "Nos ha llegado un simple mensaje!!");
+                        Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
+                        intent.putExtra("MESSAGE_TO_ACTIVITY", obj.getString("message"));
+                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
