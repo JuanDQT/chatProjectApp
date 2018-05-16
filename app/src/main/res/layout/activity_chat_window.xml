@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -10,5 +10,21 @@
         android:id="@+id/chatList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+
+        android:layout_above="@+id/input"
+        app:incomingAvatarHeight="56dp"
+        app:incomingAvatarWidth="56dp"
+        app:incomingBubbleDrawable="@drawable/bg_custom_incoming_message"
+        app:outcomingBubbleDrawable="@drawable/bg_custom_outcoming_message"
+        app:outcomingTimeTextColor="#332232"
         />
-</android.support.constraint.ConstraintLayout>
+    
+
+    <com.stfalcon.chatkit.messages.MessageInput
+        android:id="@+id/input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        app:inputButtonIcon="@drawable/ic_send"
+        app:inputHint="Escribe un mensaje"/>
+</RelativeLayout>

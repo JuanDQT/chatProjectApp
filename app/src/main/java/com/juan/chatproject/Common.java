@@ -70,14 +70,14 @@ public class Common extends Application {
                 @Override
                 public void call(Object... args) {
 
-                    JSONObject obj = (JSONObject)args[0];
 
                     try {
+
+                        JSONObject obj = (JSONObject)args[0];
                         Log.e(TAGGER, "Nos ha llegado un simple mensaje!!");
                         Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
                         intent.putExtra("MESSAGE_TO_ACTIVITY", obj.getString("message"));
                         LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
-
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
