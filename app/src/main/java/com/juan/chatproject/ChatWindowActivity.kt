@@ -6,35 +6,47 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Handler
 import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
-import com.juan.chatproject.R.id.chatList
+import android.widget.Toast
 import com.juan.chatproject.chat.Message
 import com.juan.chatproject.chat.User
+import com.squareup.picasso.Picasso
 import com.stfalcon.chatkit.commons.ImageLoader
-import com.stfalcon.chatkit.commons.models.IUser
+import com.stfalcon.chatkit.messages.MessageInput
 import com.stfalcon.chatkit.messages.MessagesListAdapter
 import kotlinx.android.synthetic.main.activity_chat_window.*
-import java.util.ArrayList
 
 
 class ChatWindowActivity : AppCompatActivity() {
 
     val TAGGER = "TAGGER"
-    var adapter: MessagesListAdapter<Message>? = null
+    var chatAdapter: MessagesListAdapter<Message>? = null
     var cachedUsers: Array<String> = emptyArray()
+    var CLIENT_ID = ""
+    var TARGET_ID = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_window)
-        Common.connectWebSocket()
+        CLIENT_ID = intent.getStringExtra("FROM")
+        TARGET_ID = intent.getStringExtra("TO")
+        Common.connectWebSocket(CLIENT_ID, TARGET_ID)
         // Observers
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(responseCapitulos, IntentFilter("GET_MESSAGES"))
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
+        val urlImage = "http://lorempixel.com/g/200/200"
+        val imageLoader = ImageLoader { imageView, url -> Picasso.with(this@ChatWindowActivity).load(urlImage).into(imageView) }
+        chatAdapter = MessagesListAdapter<Message>(CLIENT_ID, imageLoader)
+        chatList.setAdapter(chatAdapter)
 
-        adapter = MessagesListAdapter<Message>("JUANDQT", null)
-        chatList.setAdapter(adapter)
+                // Evento enviar
+        input.setInputListener({ input ->
+            chatAdapter!!.addToStart(Common.getMessageConstuctor(CLIENT_ID, input.toString()), true)
+            Common.addNewMessageToServer(input.toString(), TARGET_ID)
+
+            true
+        })
 
     }
 
@@ -51,12 +63,13 @@ class ChatWindowActivity : AppCompatActivity() {
             user = User("1", "kaka", "avatar", true)
         }
 
-        user = User("1", "kaka", "avatar", true)
+        user = User("1", "kaka", "http://lorempixel.com/g/200/200", true)
+
 
 
         m1.mIuser = user
 
-        adapter!!.addToStart(m1, true)
+        chatAdapter!!.addToStart(m1, true)
 
     }
 

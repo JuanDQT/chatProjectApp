@@ -12,10 +12,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-//        Common.connectWebSocket()
-
         btnGoChat.setOnClickListener(){
-            this.startActivity(Intent(this@MainActivity, ChatWindowActivity::class.java))
+            val intent = Intent(this@MainActivity, ChatWindowActivity::class.java)
+            intent.putExtra("FROM","PHONE")
+            intent.putExtra("TO","EMULATOR")
+            startActivity(intent)
+        }
+
+        btnGoChatEmuladpr.setOnClickListener {
+            val intent = Intent(this@MainActivity, ChatWindowActivity::class.java)
+            intent.putExtra("FROM","EMULATOR")
+            intent.putExtra("TO","PHONE")
+            startActivity(intent)
         }
 
     }

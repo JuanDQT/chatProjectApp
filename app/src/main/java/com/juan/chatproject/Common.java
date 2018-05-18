@@ -7,8 +7,12 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.juan.chatproject.chat.Message;
+import com.juan.chatproject.chat.User;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import io.socket.client.IO;
 
 import java.net.URI;
@@ -27,9 +31,11 @@ public class Common extends Application {
     private static final String PUERTO = "3000";
 
     private static final String ID_DEVICE = "Moto";
-    private static String ID_USER = "JQUISPE";
 
     private static Socket socket;
+
+    private static String TO_CLIENT;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -40,21 +46,23 @@ public class Common extends Application {
         return mContext;
     }
 
-    public static void connectWebSocket() {
-
+    public static void connectWebSocket(final String fromClient, final String toClient) {
+        TO_CLIENT = toClient;
         try {
+
             socket = IO.socket("http://192.168.1.116:3000");
             socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + ID_USER + "\" }");
+                    socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + fromClient + "\" }");
                 }
 
+                // NOT USED
             }).on("home", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
 
-                    JSONObject obj = (JSONObject)args[0];
+                    JSONObject obj = (JSONObject) args[0];
 
                     try {
                         Intent intent = new Intent("GET_MESSAGES");
@@ -70,10 +78,9 @@ public class Common extends Application {
                 @Override
                 public void call(Object... args) {
 
-
                     try {
 
-                        JSONObject obj = (JSONObject)args[0];
+                        JSONObject obj = (JSONObject) args[0];
                         Log.e(TAGGER, "Nos ha llegado un simple mensaje!!");
                         Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
                         intent.putExtra("MESSAGE_TO_ACTIVITY", obj.getString("message"));
@@ -97,6 +104,22 @@ public class Common extends Application {
 
     public static void disconnectWebSocket() {
         socket.disconnect();
+    }
+
+    public static Message getMessageConstuctor(String idUserFrom, String message) {
+        Message m1 = new Message();
+        m1.setMId(idUserFrom);
+        m1.setMMessage(message == null ? "" : message);
+
+        User user = new User("1", "kaka", "http://lorempixel.com/g/200/200", true);
+        m1.setMIuser(user);
+
+        return m1;
+    }
+
+    public static void addNewMessageToServer(String message, String to) {
+//        socket.emit("MESSAGE_TO", "{from: '" + socket.id() + "', to: '" + to + "', message: '" + message + "'}");
+        socket.emit("MESSAGE_TO", "{ \"from\": \"" + socket.id() + "\", \"to\": \"" + TO_CLIENT + "\", \"message\": \"" + message + "\" }");
     }
 
 }

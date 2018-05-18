@@ -18,7 +18,7 @@
         app:outcomingBubbleDrawable="@drawable/bg_custom_outcoming_message"
         app:outcomingTimeTextColor="#332232"
         />
-    
+
 
     <com.stfalcon.chatkit.messages.MessageInput
         android:id="@+id/input"
