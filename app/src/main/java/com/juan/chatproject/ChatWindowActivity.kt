@@ -37,35 +37,23 @@ class ChatWindowActivity : AppCompatActivity() {
         val urlImage = "http://lorempixel.com/g/200/200"
         val imageLoader = ImageLoader { imageView, url -> Picasso.with(this@ChatWindowActivity).load(urlImage).into(imageView) }
 
-        //
         chatAdapter = MessagesListAdapter<Message>("0", imageLoader)
-//        chatAdapter = MessagesListAdapter<Message>(CLIENT_ID, imageLoader)
         chatList.setAdapter(chatAdapter)
 
-                // Evento enviar
         input.setInputListener({ input ->
-            chatAdapter!!.addToStart(Common.getMessageConstuctor(true, input.toString()), true)
+            chatAdapter!!.addToStart(Common.getMessageConstuctor(true, TARGET_ID, input.toString()), true)
             Common.addNewMessageToServer(input.toString(), TARGET_ID)
-
             true
         })
-
     }
 
     fun postMessage(inputMessage: Boolean, idUserFrom: String, message: String) {
-        val m1 = Common.getMessageConstuctor(inputMessage, message)
+        val m1 = Common.getMessageConstuctor(inputMessage, TARGET_ID, message)
 
-        var user: User? = null
         if (!cachedUsers.contains(idUserFrom)) {
             // Request userFrom data.. name, photo.. Emit
             //user =
-        } else {
-            user = User("1", "kaka", "avatar", true)
         }
-
-        user = User(m1.mId, TARGET_ID, "http://lorempixel.com/g/200/200", true)
-
-        m1.mIuser = user
 
         chatAdapter!!.addToStart(m1, true)
 
@@ -82,7 +70,7 @@ class ChatWindowActivity : AppCompatActivity() {
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
-                postMessage(false,"KK", it.getStringExtra("MESSAGE_TO_ACTIVITY"))
+                postMessage(false,TARGET_ID, it.getStringExtra("MESSAGE_TO_ACTIVITY"))
             }
         }
     }

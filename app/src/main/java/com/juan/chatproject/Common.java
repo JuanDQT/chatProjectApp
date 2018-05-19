@@ -34,8 +34,6 @@ public class Common extends Application {
 
     private static Socket socket;
 
-    private static String TO_CLIENT;
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -47,7 +45,6 @@ public class Common extends Application {
     }
 
     public static void connectWebSocket(final String fromClient, final String toClient) {
-        TO_CLIENT = toClient;
         try {
 
             socket = IO.socket("http://192.168.1.116:3000");
@@ -106,30 +103,31 @@ public class Common extends Application {
         socket.disconnect();
     }
 
-    public static Message getMessageConstuctor(Boolean inputMessage, String message) {
+    public static Message getMessageConstuctor(Boolean inputMessage, String targetID, String message) {
         Message m1 = new Message();
+        User user;
 
         if (inputMessage) {
             Log.e(TAGGER, "mensaje de salida");
             m1.setMId("1");
+            user = new User("0", targetID, null, true);
+
         } else {
             Log.e(TAGGER, "mensaje de entrada");
             m1.setMId("0");
+            user = new User("1", targetID, null, true);
         }
 
 
         // 0 porque es el dueno del mensk
         m1.setMMessage(message == null ? "" : message);
-
-        User user = new User("1", "kaka", "http://lorempixel.com/g/200/200", true);
         m1.setMIuser(user);
 
         return m1;
     }
 
     public static void addNewMessageToServer(String message, String to) {
-//        socket.emit("MESSAGE_TO", "{from: '" + socket.id() + "', to: '" + to + "', message: '" + message + "'}");
-        socket.emit("MESSAGE_TO", "{ \"from\": \"" + socket.id() + "\", \"to\": \"" + TO_CLIENT + "\", \"message\": \"" + message + "\" }");
+        socket.emit("MESSAGE_TO", "{ \"from\": \"" + socket.id() + "\", \"to\": \"" + to + "\", \"message\": \"" + message + "\" }");
     }
 
 }
