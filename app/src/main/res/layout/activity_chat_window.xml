@@ -10,12 +10,11 @@
         android:id="@+id/chatList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-
         android:layout_above="@+id/input"
         app:incomingAvatarHeight="56dp"
         app:incomingAvatarWidth="56dp"
         app:incomingBubbleDrawable="@drawable/bg_custom_incoming_message"
-        app:outcomingBubbleDrawable="@drawable/bg_custom_outcoming_message"
+        app:incomingDefaultBubbleColor="#c72424"
         app:outcomingTimeTextColor="#332232"
         />
 
@@ -27,4 +26,5 @@
         android:layout_alignParentBottom="true"
         app:inputButtonIcon="@drawable/ic_send"
         app:inputHint="Escribe un mensaje"/>
+
 </RelativeLayout>

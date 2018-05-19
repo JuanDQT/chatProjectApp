@@ -106,9 +106,19 @@ public class Common extends Application {
         socket.disconnect();
     }
 
-    public static Message getMessageConstuctor(String idUserFrom, String message) {
+    public static Message getMessageConstuctor(Boolean inputMessage, String message) {
         Message m1 = new Message();
-        m1.setMId(idUserFrom);
+
+        if (inputMessage) {
+            Log.e(TAGGER, "mensaje de salida");
+            m1.setMId("1");
+        } else {
+            Log.e(TAGGER, "mensaje de entrada");
+            m1.setMId("0");
+        }
+
+
+        // 0 porque es el dueno del mensk
         m1.setMMessage(message == null ? "" : message);
 
         User user = new User("1", "kaka", "http://lorempixel.com/g/200/200", true);

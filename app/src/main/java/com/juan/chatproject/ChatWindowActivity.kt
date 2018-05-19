@@ -13,7 +13,6 @@ import com.juan.chatproject.chat.Message
 import com.juan.chatproject.chat.User
 import com.squareup.picasso.Picasso
 import com.stfalcon.chatkit.commons.ImageLoader
-import com.stfalcon.chatkit.messages.MessageInput
 import com.stfalcon.chatkit.messages.MessagesListAdapter
 import kotlinx.android.synthetic.main.activity_chat_window.*
 
@@ -37,12 +36,15 @@ class ChatWindowActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
         val urlImage = "http://lorempixel.com/g/200/200"
         val imageLoader = ImageLoader { imageView, url -> Picasso.with(this@ChatWindowActivity).load(urlImage).into(imageView) }
-        chatAdapter = MessagesListAdapter<Message>(CLIENT_ID, imageLoader)
+
+        //
+        chatAdapter = MessagesListAdapter<Message>("0", imageLoader)
+//        chatAdapter = MessagesListAdapter<Message>(CLIENT_ID, imageLoader)
         chatList.setAdapter(chatAdapter)
 
                 // Evento enviar
         input.setInputListener({ input ->
-            chatAdapter!!.addToStart(Common.getMessageConstuctor(CLIENT_ID, input.toString()), true)
+            chatAdapter!!.addToStart(Common.getMessageConstuctor(true, input.toString()), true)
             Common.addNewMessageToServer(input.toString(), TARGET_ID)
 
             true
@@ -50,10 +52,8 @@ class ChatWindowActivity : AppCompatActivity() {
 
     }
 
-    fun postMessage(idUserFrom: String, message: String = "") {
-        val m1 = Message()
-        m1.mId = idUserFrom
-        m1.mMessage = message
+    fun postMessage(inputMessage: Boolean, idUserFrom: String, message: String) {
+        val m1 = Common.getMessageConstuctor(inputMessage, message)
 
         var user: User? = null
         if (!cachedUsers.contains(idUserFrom)) {
@@ -63,9 +63,7 @@ class ChatWindowActivity : AppCompatActivity() {
             user = User("1", "kaka", "avatar", true)
         }
 
-        user = User("1", "kaka", "http://lorempixel.com/g/200/200", true)
-
-
+        user = User(m1.mId, TARGET_ID, "http://lorempixel.com/g/200/200", true)
 
         m1.mIuser = user
 
@@ -76,7 +74,7 @@ class ChatWindowActivity : AppCompatActivity() {
     val responseCapitulos = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
-                postMessage(it.getStringExtra("DATA_TO_ACTIVITY"))
+                //postMessage(it.getStringExtra("DATA_TO_ACTIVITY"))
             }
         }
     }
@@ -84,7 +82,7 @@ class ChatWindowActivity : AppCompatActivity() {
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
-                postMessage("KK", it.getStringExtra("MESSAGE_TO_ACTIVITY"))
+                postMessage(false,"KK", it.getStringExtra("MESSAGE_TO_ACTIVITY"))
             }
         }
     }
