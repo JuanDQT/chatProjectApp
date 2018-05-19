@@ -17,7 +17,8 @@ import com.stfalcon.chatkit.messages.MessagesListAdapter
 import kotlinx.android.synthetic.main.activity_chat_window.*
 
 
-class ChatWindowActivity : AppCompatActivity() {
+class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreListener {
+
 
     val TAGGER = "TAGGER"
     var chatAdapter: MessagesListAdapter<Message>? = null
@@ -38,13 +39,19 @@ class ChatWindowActivity : AppCompatActivity() {
         val imageLoader = ImageLoader { imageView, url -> Picasso.with(this@ChatWindowActivity).load(urlImage).into(imageView) }
 
         chatAdapter = MessagesListAdapter<Message>("0", imageLoader)
+        chatAdapter!!.setLoadMoreListener(this)
         chatList.setAdapter(chatAdapter)
+        // Cargamos los antiguos
+        chatAdapter!!.addToEnd(LocalDataBase().getOlderMessages(), true)
 
         input.setInputListener({ input ->
             chatAdapter!!.addToStart(Common.getMessageConstuctor(true, TARGET_ID, input.toString()), true)
             Common.addNewMessageToServer(input.toString(), TARGET_ID)
             true
         })
+
+
+
     }
 
     fun postMessage(inputMessage: Boolean, idUserFrom: String, message: String) {
@@ -75,4 +82,8 @@ class ChatWindowActivity : AppCompatActivity() {
         }
     }
 
+    override fun onLoadMore(page: Int, totalItemsCount: Int) {
+        Log.e(TAGGER, "PAGINA: " + page + " TOTAL: " + totalItemsCount)
+        chatAdapter!!.addToEnd(LocalDataBase().getOlderMessages(), true)
+    }
 }

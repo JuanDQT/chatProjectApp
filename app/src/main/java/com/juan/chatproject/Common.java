@@ -132,7 +132,6 @@ public class Common extends Application {
             json.put("from", socket.id());
             json.put("to", to);
             json.put("message", message);
-//            socket.emit("MESSAGE_TO", "{ \"from\": \"" + socket.id() + "\", \"to\": \"" + to + "\", \"message\": \"" + message + "\" }");
             socket.emit("MESSAGE_TO", json);
         } catch (JSONException e) {
             e.printStackTrace();
