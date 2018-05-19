@@ -3,6 +3,7 @@ package com.juan.chatproject;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
@@ -24,6 +25,9 @@ import io.socket.emitter.Emitter;
 
 public class Common extends Application {
 
+    public static String SHARED_PREFERENCES_NAME = "PREFERENCES";
+
+
     private static final String TAGGER = "TAGGER";
     private static Context mContext;
 
@@ -31,27 +35,30 @@ public class Common extends Application {
     private static final String PUERTO = "3000";
 
     private static final String ID_DEVICE = "Moto";
+    private static String CLIENT_ID;
 
     private static Socket socket;
-
+    private static SharedPreferences sharedPreferences;
     @Override
+
     public void onCreate() {
         super.onCreate();
         this.mContext = getApplicationContext();
+        sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
     }
 
     public static Context getContext() {
         return mContext;
     }
 
-    public static void connectWebSocket(final String fromClient, final String toClient) {
+    public static void connectWebSocket() {
         try {
 
             socket = IO.socket("http://192.168.1.116:3000");
             socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + fromClient + "\" }");
+                    socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + getClientId() + "\" }");
                 }
 
                 // NOT USED
@@ -103,23 +110,20 @@ public class Common extends Application {
         socket.disconnect();
     }
 
-    public static Message getMessageConstuctor(Boolean inputMessage, String targetID, String message) {
+    public static Message getMessageConstuctor(String clientFrom, String clientTo, String message) {
         Message m1 = new Message();
         User user;
 
-        if (inputMessage) {
-            Log.e(TAGGER, "mensaje de salida");
-            m1.setMId("1");
-            user = new User("0", targetID, null, true);
-
-        } else {
+        if (clientTo.equals(Common.getClientId())) {
             Log.e(TAGGER, "mensaje de entrada");
-            m1.setMId("0");
-            user = new User("1", targetID, null, true);
+            m1.setMId(clientFrom);
+            user = new User(clientFrom, clientFrom, null, true);
+        } else {
+            Log.e(TAGGER, "mensaje de salida");
+            m1.setMId(clientTo);
+            user = new User(clientFrom, clientFrom, null, true);
         }
 
-
-        // 0 porque es el dueno del mensk
         m1.setMMessage(message == null ? "" : message);
         m1.setMIuser(user);
 
@@ -132,10 +136,20 @@ public class Common extends Application {
             json.put("from", socket.id());
             json.put("to", to);
             json.put("message", message);
+
             socket.emit("MESSAGE_TO", json);
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
+
+    public static String getClientId() {
+        if (CLIENT_ID == null) {
+            CLIENT_ID = sharedPreferences.getString("FROM", "");
+        }
+        return CLIENT_ID;
+    }
+
+
 
 }

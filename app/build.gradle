@@ -33,6 +33,10 @@ dependencies {
 
     implementation 'com.github.stfalcon:chatkit:0.2.2'
     implementation 'com.squareup.picasso:picasso:2.5.2'
+    implementation 'de.hdodenhof:circleimageview:2.2.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
+    implementation 'com.github.gurleensethi:LiteUtilities:v1.3.0'
+
     implementation('io.socket:socket.io-client:1.0.0') {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'

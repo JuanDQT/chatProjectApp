@@ -6,21 +6,9 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <Button
-        android:text="Vamos!"
-        android:id="@+id/btnGoChat"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <Button
-
-        android:id="@+id/btnGoChatEmuladpr"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Emulador"
-        app:layout_constraintTop_toBottomOf="@+id/btnGoChat"
-        tools:layout_editor_absoluteX="0dp" />
-
-
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/rv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+         />
 </android.support.constraint.ConstraintLayout>
