@@ -31,5 +31,6 @@ class LocalDataBase {
         list = list.filter { x -> x.id != exceptUser}.toMutableList()
 
         return list
+//        return list.asReversed()
     }
 }

@@ -22,10 +22,13 @@
             </intent-filter>
         </activity>
         <activity
+            android:launchMode="singleTop"
             android:name=".ChatWindowActivity"
             android:theme="@style/AppThemeNoToolbar" />
         <activity
             android:name=".MainActivity"></activity>
+
+        <service android:name=".MyService" />
     </application>
 
 </manifest>

@@ -5,11 +5,8 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
-import android.widget.Toast
 import com.juan.chatproject.chat.Message
-import com.juan.chatproject.chat.User
 import com.squareup.picasso.Picasso
-import com.stfalcon.chatkit.commons.ImageLoader
 import com.stfalcon.chatkit.messages.MessagesListAdapter
 import kotlinx.android.synthetic.main.activity_chat_window.*
 
@@ -22,17 +19,19 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
     var CLIENT_ID = ""
     var TARGET_ID = ""
     var sharedPreferences: SharedPreferences? = null
+    var fromBack = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_window)
         sharedPreferences = getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         CLIENT_ID = sharedPreferences!!.getString("FROM", "")
-        TARGET_ID = intent.getStringExtra("TO")
+//        TARGET_ID = intent.getStringExtra("TO")
+        TARGET_ID = intent.extras.getString("TO")
 
         val urlImage = LocalDataBase().getAllUsers(CLIENT_ID).filter { p -> p.id ==  TARGET_ID}.first().avatar
         Picasso.with(this@ChatWindowActivity).load(urlImage).into(profile_image )
-        Common.connectWebSocket()
         // Observers
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(responseCapitulos, IntentFilter("GET_MESSAGES"))
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
@@ -88,5 +87,27 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
     override fun onLoadMore(page: Int, totalItemsCount: Int) {
         Log.e(TAGGER, "PAGINA: " + page + " TOTAL: " + totalItemsCount)
 //        chatAdapter!!.addToEnd(LocalDataBase().getOlderMessages(), true)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Common.setAppForeground(true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Common.setAppForeground(false)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (!fromBack) {
+            Common.setAppForeground(false)
+        }
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        fromBack = true
     }
 }

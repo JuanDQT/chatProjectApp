@@ -21,7 +21,7 @@ class LoginActivity : AppCompatActivity() {
                 sharedPreferences.edit().putString("FROM", numbersAvailable.getValue(etLogin.text.toString())).apply()
 
                 val intent = Intent(this@LoginActivity, MainActivity::class.java)
-                intent.putExtra("FROM", numbersAvailable.getValue(etLogin.text.toString()))
+//                intent.putExtra("FROM", numbersAvailable.getValue(etLogin.text.toString()))
                 startActivity(intent)
             }
         }

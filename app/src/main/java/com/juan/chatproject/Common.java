@@ -1,12 +1,15 @@
 package com.juan.chatproject;
 
 import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.juan.chatproject.chat.Message;
 import com.juan.chatproject.chat.User;
@@ -16,29 +19,28 @@ import org.json.JSONObject;
 
 import io.socket.client.IO;
 
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
 public class Common extends Application {
 
-    public static String SHARED_PREFERENCES_NAME = "PREFERENCES";
-
-
+    public static final String SHARED_PREFERENCES_NAME = "PREFERENCES";
+    public static final String SHARED_PREFERENCES_ACTIVITY_ACTIVE = "ACTIVE";
+    public static final String SHARED_PREFERENCES_ACTIVITY_IN_MAIN = "MAIN_ACTIVE";
     private static final String TAGGER = "TAGGER";
-    private static Context mContext;
-
     private static final String IP = "192.168.1.116"; // 192.168.44.122
     private static final String PUERTO = "3000";
-
     private static final String ID_DEVICE = "Moto";
+
+    private static Context mContext;
+
     private static String CLIENT_ID;
 
     private static Socket socket;
     private static SharedPreferences sharedPreferences;
+
     @Override
 
     public void onCreate() {
@@ -86,9 +88,18 @@ public class Common extends Application {
 
                         JSONObject obj = (JSONObject) args[0];
                         Log.e(TAGGER, "Nos ha llegado un simple mensaje!!");
-                        Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
-                        intent.putExtra("MESSAGE_TO_ACTIVITY", obj.getString("message"));
-                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+
+                        // TODO: Guardar en bbdd como no leidos...
+                        if (Common.isAppForeground()) {
+                            Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
+                            intent.putExtra("MESSAGE_TO_ACTIVITY", obj.getString("message"));
+                            intent.putExtra("ID_FROM_TO_ACTIVITY", obj.getString("from"));
+                            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+                        } else {
+                            // Aplicacion cerrada o en background
+                            showNotification(obj.getString("from"), obj.getString("message"));
+                        }
+
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -107,7 +118,7 @@ public class Common extends Application {
     }
 
     public static void disconnectWebSocket() {
-        socket.disconnect();
+        //socket.disconnect();
     }
 
     public static Message getMessageConstuctor(String clientFrom, String clientTo, String message) {
@@ -133,7 +144,7 @@ public class Common extends Application {
     public static void addNewMessageToServer(String message, String to) {
         JSONObject json = new JSONObject();
         try {
-            json.put("from", socket.id());
+            json.put("from", getClientId());
             json.put("to", to);
             json.put("message", message);
 
@@ -150,6 +161,51 @@ public class Common extends Application {
         return CLIENT_ID;
     }
 
+    private static void showNotification(String from, String message) {
 
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(mContext)
+                        .setSmallIcon(R.drawable.ic_send)
+                        .setContentTitle(from)
+                        .setContentText(message)
+                        .setPriority(Notification.PRIORITY_MAX)
+                        .setDefaults(Notification.DEFAULT_ALL);
 
+        if (Common.isActivityInMain()) {
+            Log.e(TAGGER, "SOLO ABRIMOS EL CHAT");
+        } else {
+            Log.e(TAGGER, "ABRIMOS TODO");
+        }
+
+        Intent messageIntent = new Intent(mContext, (Common.isActivityInMain())? ChatWindowActivity.class: MainActivity.class);
+
+        messageIntent.putExtra("TO", from);
+        messageIntent.putExtra("MESSAGE", message);
+        messageIntent.putExtra("GO_CHAT_WINDOW", true);
+
+        mBuilder.setContentIntent(PendingIntent.getActivity(mContext, 0, messageIntent, 0));
+
+        NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(0, mBuilder.build());
+    }
+
+    public static void setAppForeground(Boolean isActive) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(SHARED_PREFERENCES_ACTIVITY_ACTIVE, isActive);
+        editor.apply();
+    }
+
+    public static void setActivityInMain(Boolean isActive) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(SHARED_PREFERENCES_ACTIVITY_IN_MAIN, isActive);
+        editor.apply();
+    }
+
+    public static boolean isAppForeground() {
+        return sharedPreferences.getBoolean(SHARED_PREFERENCES_ACTIVITY_ACTIVE, true);
+    }
+
+    public static boolean isActivityInMain() {
+        return sharedPreferences.getBoolean(SHARED_PREFERENCES_ACTIVITY_IN_MAIN, true);
+    }
 }
