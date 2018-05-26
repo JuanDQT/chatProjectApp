@@ -80,6 +80,28 @@ public class Common extends Application {
                     }
                 }
 
+            }).on("GET_USER_IS_TYPING", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+
+                    try {
+
+                        JSONObject obj = (JSONObject) args[0];
+                        Log.e(TAGGER, "El otro user esta escribiendo");
+
+                        // TODO: Guardar en bbdd como no leidos...
+                        if (Common.isAppForeground()) {
+                            Intent intent = new Intent("INTENT_GET_USER_IS_TYPING");
+                            intent.putExtra("ID_FROM_TO_ACTIVITY", obj.getString("from"));
+                            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
             }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
@@ -149,6 +171,17 @@ public class Common extends Application {
             json.put("message", message);
 
             socket.emit("MESSAGE_TO", json);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void notifyTyping(String to) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("from", getClientId());
+            json.put("to", to);
+            socket.emit("USER_IS_TYPING", json);
         } catch (JSONException e) {
             e.printStackTrace();
         }

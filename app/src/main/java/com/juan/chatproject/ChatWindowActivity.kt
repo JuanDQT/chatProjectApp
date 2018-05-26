@@ -4,11 +4,17 @@ import android.content.*
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.content.LocalBroadcastManager
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
+import android.view.View
+
 import com.juan.chatproject.chat.Message
 import com.squareup.picasso.Picasso
 import com.stfalcon.chatkit.messages.MessagesListAdapter
 import kotlinx.android.synthetic.main.activity_chat_window.*
+import java.util.*
+import kotlin.concurrent.schedule
 
 
 class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreListener {
@@ -20,6 +26,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
     var TARGET_ID = ""
     var sharedPreferences: SharedPreferences? = null
     var fromBack = false
+    var DELAY_TIME_IS_TYPING = 5000L
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,9 +38,10 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
         TARGET_ID = intent.extras.getString("TO")
 
         val urlImage = LocalDataBase().getAllUsers(CLIENT_ID).filter { p -> p.id ==  TARGET_ID}.first().avatar
-        Picasso.with(this@ChatWindowActivity).load(urlImage).into(profile_image )
+        Picasso.with(this@ChatWindowActivity).load(urlImage).into(profile_image)
         // Observers
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(responseCapitulos, IntentFilter("GET_MESSAGES"))
+        LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getUserIsTyping, IntentFilter("INTENT_GET_USER_IS_TYPING"))
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
 //        val urlImage = "http://lorempixel.com/g/200/200"
 //        val imageLoader = ImageLoader { imageView, url -> Picasso.with(this@ChatWindowActivity).load(urlImage).into(imageView) }
@@ -45,6 +53,18 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
 
 //        chatAdapter!!.addToEnd(LocalDataBase().getOlderMessages(), true)
+
+        input.inputEditText.addTextChangedListener(object: TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                Common.notifyTyping(TARGET_ID)
+            }
+        })
 
         input.setInputListener({ input ->
             chatAdapter!!.addToStart(Common.getMessageConstuctor(Common.getClientId(), TARGET_ID, input.toString()), true)
@@ -83,6 +103,26 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
             }
         }
     }
+
+    val getUserIsTyping = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+
+            if (tvWritting.visibility == View.VISIBLE)
+                return
+
+            // TODO: verificar que esta en el chat correcto, no otro.
+            intent?.let {
+                tvWritting.visibility = View.VISIBLE
+                Timer().schedule(DELAY_TIME_IS_TYPING) {
+
+                    runOnUiThread {
+                        tvWritting.visibility = View.GONE
+                    }
+                }
+            }
+        }
+    }
+
 
     override fun onLoadMore(page: Int, totalItemsCount: Int) {
         Log.e(TAGGER, "PAGINA: " + page + " TOTAL: " + totalItemsCount)

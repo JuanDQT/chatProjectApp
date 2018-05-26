@@ -25,6 +25,17 @@
             android:src="@drawable/ic_launcher_background"
             />
 
+        <TextView
+            android:id="@+id/tvWritting"
+            android:layout_width="50sp"
+            android:layout_height="50sp"
+            android:layout_gravity="center"
+            android:text="..."
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:visibility="gone"
+            android:textSize="32dp" />
+
     </FrameLayout>
 
     <com.stfalcon.chatkit.messages.MessagesList
