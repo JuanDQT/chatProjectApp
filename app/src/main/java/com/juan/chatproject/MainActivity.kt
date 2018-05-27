@@ -70,7 +70,6 @@ class MainActivity : AppCompatActivity() {
         Common.setActivityInMain(true)
 
         longToast("Hola: " + sharedPreferences!!.getString("FROM", ""))
-//        longToast("Hola: " + intent.getStringExtra("FROM"))
         allUsers = LocalDataBase().getAllUsers(exceptUser = sharedPreferences!!.getString("FROM", ""))
         RecyclerAdapterUtil.Builder(this, allUsers!!, R.layout.row_user_chat)
                 .viewsList(R.id.tvName, R.id.ivPic)

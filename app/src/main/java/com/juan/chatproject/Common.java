@@ -14,12 +14,23 @@ import android.util.Log;
 import com.juan.chatproject.chat.Message;
 import com.juan.chatproject.chat.User;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import io.socket.client.IO;
 
 import java.net.URISyntaxException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -46,6 +57,13 @@ public class Common extends Application {
         super.onCreate();
         this.mContext = getApplicationContext();
         sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
+        Realm.init(mContext);
+        RealmConfiguration realmConfiguration = new RealmConfiguration.Builder().
+                name("chat").
+                schemaVersion(1).
+                migration(new CustomMigration()).
+                build();
+        Realm.setDefaultConfiguration(realmConfiguration);
     }
 
     public static Context getContext() {
@@ -110,6 +128,23 @@ public class Common extends Application {
 
                 }
 
+            }).on("GET_ALL_CHATS_AVAILABLE", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+
+                    JSONArray array = (JSONArray) args[0];
+                    List<User> users = getUsersFromJSONArray(array);
+
+                    LocalDataBase.access.updateUsers(users);
+
+                    if (Common.isAppForeground()) {
+                        Log.e(TAGGER, "Tamano: " + array.length());
+                        // TODO: Update adapter main
+                    }
+
+
+                }
+
             }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
@@ -159,11 +194,12 @@ public class Common extends Application {
         if (clientTo.equals(Common.getClientId())) {
             Log.e(TAGGER, "mensaje de entrada");
             m1.setMId(clientFrom);
-            user = new User(clientFrom, clientFrom, null, true);
+            // TODO: check
+            user = new User(clientFrom, clientFrom, null, true, null);
         } else {
             Log.e(TAGGER, "mensaje de salida");
             m1.setMId(clientTo);
-            user = new User(clientFrom, clientFrom, null, true);
+            user = new User(clientFrom, clientFrom, null, true, null);
         }
 
         m1.setMMessage(message == null ? "" : message);
@@ -184,6 +220,21 @@ public class Common extends Application {
             e.printStackTrace();
         }
     }
+
+    public static void requestAllChatsAvailable() {
+
+        if (socket == null || !Common.isAppForeground())
+            return;
+
+        try {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("FROM", getClientId());
+            socket.emit("ALL_CHATS_AVAILABLE", jsonObject);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static void notifyTyping(String to) {
         JSONObject json = new JSONObject();
@@ -263,5 +314,46 @@ public class Common extends Application {
 
     public static boolean isActivityInMain() {
         return sharedPreferences.getBoolean(SHARED_PREFERENCES_ACTIVITY_IN_MAIN, true);
+    }
+
+    // Converisons:
+
+    private static ArrayList<User> getUsersFromJSONArray(JSONArray jsonArray) {
+        ArrayList<User> users = new ArrayList<>();
+
+        try {
+
+            for (int i = 0; i < jsonArray.length(); i++) {
+
+                JSONObject object = jsonArray.getJSONObject(i);
+//                DateFormat sdf = SimpleDateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.ENGLISH);
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+
+                String replaced = object.getString("last_seen").replaceAll("-", "/");
+                Date date = sdf.parse(replaced);
+
+                User u = new User(object.getString("code"),
+                        object.getString("name"),
+                        object.getString("avatar"),
+                        object.getInt("online") == 1,
+                        date
+                        );
+                users.add(u);
+
+            }
+
+        } catch (JSONException | ParseException e) {
+            e.printStackTrace();
+        }
+
+        return users;
+        /*
+        try (Realm realm = Realm.getDefaultInstance()) {
+            realm.beginTransaction();
+            PalabraSearch palabraSearch = realm.createObject(PalabraSearch.class);
+            palabraSearch.setName(palabra.toLowerCase());
+            palabraSearch.setLanguageCode(baseCodeLanguge.toLowerCase());
+            realm.commitTransaction();
+        }*/
     }
 }

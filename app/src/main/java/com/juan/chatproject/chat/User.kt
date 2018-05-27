@@ -1,8 +1,11 @@
 package com.juan.chatproject.chat
 
 import com.stfalcon.chatkit.commons.models.IUser
+import io.realm.RealmObject
+import io.realm.annotations.PrimaryKey
+import java.util.*
 
-class User(private var id: String?, private var name: String?, private var avatar: String?, val isOnline: Boolean) : IUser {
+open class User(@PrimaryKey private var id: String? = "", private var name: String? = "", private var avatar: String? = "", private var isOnline: Boolean? = false, private var lastSeen: Date? = null) : RealmObject(), IUser {
 
     override fun getId(): String? {
         return id
@@ -27,4 +30,7 @@ class User(private var id: String?, private var name: String?, private var avata
     fun setAvatar(avatar: String) {
         this.avatar = avatar
     }
+
+
+
 }
