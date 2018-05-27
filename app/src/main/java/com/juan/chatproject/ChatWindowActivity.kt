@@ -12,9 +12,9 @@ import android.view.View
 import com.juan.chatproject.chat.Message
 import com.squareup.picasso.Picasso
 import com.stfalcon.chatkit.messages.MessagesListAdapter
-import kotlinx.android.synthetic.main.activity_chat_window.*
 import java.util.*
 import kotlin.concurrent.schedule
+import kotlinx.android.synthetic.main.activity_chat_window.*
 
 
 class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreListener {

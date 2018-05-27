@@ -30,8 +30,7 @@ public class Common extends Application {
     public static final String SHARED_PREFERENCES_ACTIVITY_ACTIVE = "ACTIVE";
     public static final String SHARED_PREFERENCES_ACTIVITY_IN_MAIN = "MAIN_ACTIVE";
     private static final String TAGGER = "TAGGER";
-    private static final String IP = "192.168.1.116"; // 192.168.44.122
-    private static final String PUERTO = "3000";
+    private static final String IP = "http://192.168.1.116:3000"; // 192.168.44.122
     private static final String ID_DEVICE = "Moto";
 
     private static Context mContext;
@@ -56,11 +55,19 @@ public class Common extends Application {
     public static void connectWebSocket() {
         try {
 
-            socket = IO.socket("http://192.168.1.116:3000");
+            socket = IO.socket(IP);
             socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + getClientId() + "\" }");
+                    try {
+                        JSONObject jsonLogin = new JSONObject();
+                        jsonLogin.put("socketID", socket.id());
+                        jsonLogin.put("clientID", getClientId());
+                        socket.emit("LOGIN", jsonLogin);
+//                        socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + getClientId() + "\" }");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 // NOT USED
@@ -212,7 +219,7 @@ public class Common extends Application {
             Log.e(TAGGER, "ABRIMOS TODO");
         }
 
-        Intent messageIntent = new Intent(mContext, (Common.isActivityInMain())? ChatWindowActivity.class: MainActivity.class);
+        Intent messageIntent = new Intent(mContext, (Common.isActivityInMain()) ? ChatWindowActivity.class : MainActivity.class);
 
         messageIntent.putExtra("TO", from);
         messageIntent.putExtra("MESSAGE", message);
@@ -228,6 +235,20 @@ public class Common extends Application {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putBoolean(SHARED_PREFERENCES_ACTIVITY_ACTIVE, isActive);
         editor.apply();
+
+        if (socket == null)
+            return;
+
+        try {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("FROM", getClientId());
+            jsonObject.put("LAST_SEEN", isActive);
+            socket.emit("CLIENT_SET_LAST_SEEN", jsonObject);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     public static void setActivityInMain(Boolean isActive) {
