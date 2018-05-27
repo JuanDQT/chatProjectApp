@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="#ddd"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:weightSum="1"
+
+    android:layout_height="70dp">
+
+    <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/ivPic"
+        android:layout_width="0dp"
+        android:layout_weight="0.2"
+        android:layout_height="50dp"
+        android:layout_gravity="center_vertical"
+        android:alpha="0.6"
+        android:src="@drawable/ic_launcher_background"
+        app:civ_border_color="#62d455"
+        app:civ_border_width="2dp" />
+
+    <LinearLayout
+        android:paddingTop="10dp"
+        android:paddingLeft="10dp"
+        android:paddingEnd="20dp"
+        android:layout_weight="0.8"
+        android:layout_width="0dp"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+             />
+
+
+        <TextView
+            android:id="@+id/tvDescription"
+            android:textSize="12dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+
+</LinearLayout>

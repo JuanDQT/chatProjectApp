@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ChatWindowActivity">
+
+    <FrameLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:gravity="center"
+        android:background="@color/colorPrimaryDark"
+        >
+
+        <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/profile_image"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            app:civ_border_color="#62d455"
+            app:civ_border_width="2dp"
+            android:alpha="0.6"
+            android:src="@drawable/ic_launcher_background"
+            />
+
+        <TextView
+            android:id="@+id/tvWritting"
+            android:layout_width="50sp"
+            android:layout_height="50sp"
+            android:layout_gravity="center"
+            android:text="..."
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:visibility="gone"
+            android:textSize="32dp" />
+
+    </FrameLayout>
+
+    <com.stfalcon.chatkit.messages.MessagesList
+        android:layout_below="@+id/toolbar"
+        android:id="@+id/chatList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/input"
+        app:incomingDefaultBubbleColor="#ddd"
+        app:outcomingTimeTextColor="#fff"
+        app:incomingTimeTextColor="#484444"
+        />
+
+
+    <com.stfalcon.chatkit.messages.MessageInput
+        android:background="#ddd"
+        android:id="@+id/input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        app:inputButtonIcon="@drawable/ic_send"
+        app:inputHintColor="#484444"
+        app:inputHint="Escribe un mensaje"/>
+
+</RelativeLayout>
