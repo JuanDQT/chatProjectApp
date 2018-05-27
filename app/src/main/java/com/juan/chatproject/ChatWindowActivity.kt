@@ -26,21 +26,18 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
     var TARGET_ID = ""
     var sharedPreferences: SharedPreferences? = null
     var fromBack = false
-    var DELAY_TIME_IS_TYPING = 5000L
-
+    var DELAY_TIME_IS_TYPING = 10000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_window)
         sharedPreferences = getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         CLIENT_ID = sharedPreferences!!.getString("FROM", "")
-//        TARGET_ID = intent.getStringExtra("TO")
         TARGET_ID = intent.extras.getString("TO")
 
-        val urlImage = LocalDataBase().getAllUsers(CLIENT_ID).filter { p -> p.id ==  TARGET_ID}.first().avatar
+        val urlImage = LocalDataBase().getAllUsers(CLIENT_ID).filter { p -> p.id == TARGET_ID }.first().avatar
         Picasso.with(this@ChatWindowActivity).load(urlImage).into(profile_image)
         // Observers
-        LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(responseCapitulos, IntentFilter("GET_MESSAGES"))
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getUserIsTyping, IntentFilter("INTENT_GET_USER_IS_TYPING"))
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
 //        val urlImage = "http://lorempixel.com/g/200/200"
@@ -54,7 +51,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
 //        chatAdapter!!.addToEnd(LocalDataBase().getOlderMessages(), true)
 
-        input.inputEditText.addTextChangedListener(object: TextWatcher {
+        input.inputEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
             }
 
@@ -62,7 +59,9 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
             }
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                Common.notifyTyping(TARGET_ID)
+                // Excluimos la tecla enter como evento escritura
+                if (!s.isNullOrEmpty())
+                    Common.notifyTyping(TARGET_ID)
             }
         })
 
@@ -71,7 +70,6 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
             Common.addNewMessageToServer(input.toString(), TARGET_ID)
             true
         })
-
 
 
     }
@@ -88,18 +86,13 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
         chatAdapter!!.addToStart(m1, true)
     }
 
-    val responseCapitulos = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            intent?.let {
-                //postMessage(it.getStringExtra("DATA_TO_ACTIVITY"))
-            }
-        }
-    }
-
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
-                postMessage(clientFrom = TARGET_ID, clientTo = Common.getClientId(), message = it.getStringExtra("MESSAGE_TO_ACTIVITY"))
+                if (isCurrentChatUser(it.getStringExtra("ID_FROM_TO_ACTIVITY"), it.getStringExtra("ID_TO_TO_ACTIVITY"))) {
+                    postMessage(clientFrom = TARGET_ID, clientTo = Common.getClientId(), message = it.getStringExtra("MESSAGE_TO_ACTIVITY"))
+                    tvWritting.visibility = View.GONE
+                }
             }
         }
     }
@@ -107,20 +100,24 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
     val getUserIsTyping = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
-            if (tvWritting.visibility == View.VISIBLE)
-                return
-
-            // TODO: verificar que esta en el chat correcto, no otro.
             intent?.let {
-                tvWritting.visibility = View.VISIBLE
-                Timer().schedule(DELAY_TIME_IS_TYPING) {
-
-                    runOnUiThread {
-                        tvWritting.visibility = View.GONE
+                if (isCurrentChatUser(it.getStringExtra("ID_FROM_TO_ACTIVITY"), it.getStringExtra("ID_TO_TO_ACTIVITY"))) {
+                    if (tvWritting.visibility == View.VISIBLE)
+                        return
+                    tvWritting.visibility = View.VISIBLE
+                    Timer().schedule(DELAY_TIME_IS_TYPING) {
+                        runOnUiThread {
+                            tvWritting.visibility = View.GONE
+                        }
                     }
                 }
             }
         }
+    }
+
+
+    fun isCurrentChatUser(idFrom: String, idTo: String): Boolean {
+        return TARGET_ID.equals(idFrom) && CLIENT_ID.equals(idTo)
     }
 
 

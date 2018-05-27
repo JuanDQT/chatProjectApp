@@ -93,6 +93,7 @@ public class Common extends Application {
                         if (Common.isAppForeground()) {
                             Intent intent = new Intent("INTENT_GET_USER_IS_TYPING");
                             intent.putExtra("ID_FROM_TO_ACTIVITY", obj.getString("from"));
+                            intent.putExtra("ID_TO_TO_ACTIVITY", obj.getString("to"));
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
                         }
 
@@ -116,6 +117,7 @@ public class Common extends Application {
                             Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
                             intent.putExtra("MESSAGE_TO_ACTIVITY", obj.getString("message"));
                             intent.putExtra("ID_FROM_TO_ACTIVITY", obj.getString("from"));
+                            intent.putExtra("ID_TO_TO_ACTIVITY", obj.getString("to"));
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
                         } else {
                             // Aplicacion cerrada o en background
