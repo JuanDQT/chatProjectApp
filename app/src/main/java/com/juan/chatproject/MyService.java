@@ -23,15 +23,6 @@ class MyService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Common.connectWebSocket();
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                Common.requestAllChatsAvailable();
-            }
-        };
-
-        Timer timer = new Timer();
-        timer.schedule(timerTask, 0,3000);
         return Service.START_STICKY;
     }
 }

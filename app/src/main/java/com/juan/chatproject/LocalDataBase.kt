@@ -3,10 +3,8 @@ package com.juan.chatproject
 import android.util.Log
 import com.juan.chatproject.chat.Message
 import com.juan.chatproject.chat.User
-import com.vicpin.krealmextensions.allItems
-import com.vicpin.krealmextensions.createOrUpdate
-import com.vicpin.krealmextensions.save
 import io.realm.Realm
+import org.xml.sax.SAXParseException
 
 
 class LocalDataBase {
@@ -27,37 +25,30 @@ class LocalDataBase {
     }
 
 
-    fun getAllUsers(exceptUser: String): List<User> {
-
-
-        val u1 = User("JQUISPE", "Juan Daniel", "https://i1.wp.com/superflag.com/wp-content/uploads/2015/11/argentinian-flag-medium.jpg", false, null)
-        val u2 = User("ANNEMIJN", "Annemijn", "https://i.ebayimg.com/images/g/ge4AAOxyuOtRaQfY/s-l300.jpg", false, null)
-        val u3 = User("EMULATOR", "Emulador", "http://www.acclaimclipart.com/free_clipart_images/globe_with_north_america_at_the_center_of_the_world_0515-1012-2103-2907_TN.jpg", false, null)
-
-        var list = mutableListOf(u1, u2, u3)
-
-        list = list.filter { x -> x.id != exceptUser }.toMutableList()
-
-        return list
-//        return list.asReversed()
-    }
-
     companion object access {
-        fun updateUsers(list: List<User>) {
 
-            val realm = Realm.getDefaultInstance();
+        fun updateUsers(realm: Realm, list: List<User>) {
+            val ids = getAllUsers(realm = realm, exceptUser = Common.getClientId()).toList().map { it.id }.toList()
 
-            for (x in list) {
-
-                try {
-                    realm.beginTransaction()
-                    realm.copyToRealmOrUpdate(x)
-                    realm.commitTransaction()
-                } finally {
-                    realm.close()
+            realm.executeTransaction {
+                for (item in list) {
+                    if (!ids.contains(item.id) || item.banned == 1) {
+                        it.copyToRealmOrUpdate(item)
+                        Log.e("TAGGER", "Te anadimos")
+                    } else {
+                        Log.e("TAGGER", "Ya estas guardado")
+                    }
                 }
             }
         }
+
+        fun getAllUsers(realm: Realm, exceptUser: String = Common.getClientId()): List<User> {
+            var ent = 0
+//            var u = realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", ent).findAll().toList()
+            var u = ArrayList(realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", ent).findAll())
+            return u
+        }
+
     }
 
 }

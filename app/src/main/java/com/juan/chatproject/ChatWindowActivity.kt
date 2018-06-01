@@ -12,6 +12,7 @@ import android.view.View
 import com.juan.chatproject.chat.Message
 import com.squareup.picasso.Picasso
 import com.stfalcon.chatkit.messages.MessagesListAdapter
+import io.realm.Realm
 import java.util.*
 import kotlin.concurrent.schedule
 import kotlinx.android.synthetic.main.activity_chat_window.*
@@ -27,15 +28,17 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
     var sharedPreferences: SharedPreferences? = null
     var fromBack = false
     var DELAY_TIME_IS_TYPING = 10000L
+    var realm: Realm? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        realm = Realm.getDefaultInstance()
         setContentView(R.layout.activity_chat_window)
         sharedPreferences = getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         CLIENT_ID = sharedPreferences!!.getString("FROM", "")
         TARGET_ID = intent.extras.getString("TO")
 
-        val urlImage = LocalDataBase().getAllUsers(CLIENT_ID).filter { p -> p.id == TARGET_ID }.first().avatar
+        val urlImage = LocalDataBase.getAllUsers(realm = realm!!, exceptUser = CLIENT_ID).filter { p -> p.id == TARGET_ID }.first().avatar
         Picasso.with(this@ChatWindowActivity).load(urlImage).into(profile_image)
         // Observers
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getUserIsTyping, IntentFilter("INTENT_GET_USER_IS_TYPING"))
@@ -138,6 +141,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
     override fun onDestroy() {
         super.onDestroy()
+        realm?.close()
         if (!fromBack) {
             Common.setAppForeground(false)
         }

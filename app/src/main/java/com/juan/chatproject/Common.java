@@ -114,7 +114,6 @@ public class Common extends Application {
                         JSONObject obj = (JSONObject) args[0];
                         Log.e(TAGGER, "El otro user esta escribiendo");
 
-                        // TODO: Guardar en bbdd como no leidos...
                         if (Common.isAppForeground()) {
                             Intent intent = new Intent("INTENT_GET_USER_IS_TYPING");
                             intent.putExtra("ID_FROM_TO_ACTIVITY", obj.getString("from"));
@@ -134,15 +133,13 @@ public class Common extends Application {
 
                     JSONArray array = (JSONArray) args[0];
                     List<User> users = getUsersFromJSONArray(array);
-
-                    LocalDataBase.access.updateUsers(users);
+                    Realm realm = Realm.getDefaultInstance();
+                    LocalDataBase.access.updateUsers(realm, users);
 
                     if (Common.isAppForeground()) {
-                        Log.e(TAGGER, "Tamano: " + array.length());
-                        // TODO: Update adapter main
+                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
                     }
-
-
+                    realm.close();
                 }
 
             }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
@@ -195,11 +192,11 @@ public class Common extends Application {
             Log.e(TAGGER, "mensaje de entrada");
             m1.setMId(clientFrom);
             // TODO: check
-            user = new User(clientFrom, clientFrom, null, true, null);
+            user = new User(clientFrom, clientFrom, null, true, null, null, 0);
         } else {
             Log.e(TAGGER, "mensaje de salida");
             m1.setMId(clientTo);
-            user = new User(clientFrom, clientFrom, null, true, null);
+            user = new User(clientFrom, clientFrom, null, true, null, null, 0);
         }
 
         m1.setMMessage(message == null ? "" : message);
@@ -329,14 +326,19 @@ public class Common extends Application {
 //                DateFormat sdf = SimpleDateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.ENGLISH);
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
 
-                String replaced = object.getString("last_seen").replaceAll("-", "/");
-                Date date = sdf.parse(replaced);
+                Date date = null;
+                if (object.getString("last_seen") != null && !object.getString("last_seen").equals("null") && !object.getString("last_seen").trim().isEmpty()) {
+                    String replaced = object.getString("last_seen").replaceAll("-", "/");
+                    date = sdf.parse(replaced);
+                }
 
                 User u = new User(object.getString("code"),
                         object.getString("name"),
                         object.getString("avatar"),
                         object.getInt("online") == 1,
-                        date
+                        date,
+                        null,
+                        object.getInt("banned")
                         );
                 users.add(u);
 
@@ -347,13 +349,5 @@ public class Common extends Application {
         }
 
         return users;
-        /*
-        try (Realm realm = Realm.getDefaultInstance()) {
-            realm.beginTransaction();
-            PalabraSearch palabraSearch = realm.createObject(PalabraSearch.class);
-            palabraSearch.setName(palabra.toLowerCase());
-            palabraSearch.setLanguageCode(baseCodeLanguge.toLowerCase());
-            realm.commitTransaction();
-        }*/
     }
 }
