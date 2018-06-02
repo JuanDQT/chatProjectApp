@@ -28,16 +28,9 @@ class LocalDataBase {
     companion object access {
 
         fun updateUsers(realm: Realm, list: List<User>) {
-            val ids = getAllUsers(realm = realm, exceptUser = Common.getClientId()).toList().map { it.id }.toList()
-
             realm.executeTransaction {
                 for (item in list) {
-                    if (!ids.contains(item.id) || item.banned == 1) {
                         it.copyToRealmOrUpdate(item)
-                        Log.e("TAGGER", "Te anadimos")
-                    } else {
-                        Log.e("TAGGER", "Ya estas guardado")
-                    }
                 }
             }
         }

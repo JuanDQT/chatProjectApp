@@ -23,10 +23,11 @@ import io.realm.Realm
 class MainActivity : AppCompatActivity() {
 
     val TAGGER = "TAGGER"
-    var allUsers: ArrayList<User>? = null
+    var allUsers: ArrayList<User> = arrayListOf()
     val GO_CHAT_WINDOW = "GO_CHAT_WINDOW"
     var sharedPreferences: SharedPreferences? = null
     var realm: Realm? = null
+    var adapter: RecyclerAdapterUtil<User>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,13 +47,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+        loadChatContacts()
     }
 
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
                 val messsage = it.getStringExtra("MESSAGE_TO_ACTIVITY")
-                val position = allUsers!!.indexOf(allUsers!!.filter { p -> p.id == it.getStringExtra("ID_FROM_TO_ACTIVITY") }.first())
+                val position = allUsers.indexOf(allUsers.filter { p -> p.id == it.getStringExtra("ID_FROM_TO_ACTIVITY") }.first())
                 Log.e(TAGGER, "Posicion es: " + position)
                 rv.findViewHolderForAdapterPosition(position).let {
                     val tvDescription = it.itemView.findViewById<TextView>(R.id.tvDescription)
@@ -66,9 +68,10 @@ class MainActivity : AppCompatActivity() {
     val getUsers = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             realm?.let {
-                val users = LocalDataBase.access.getAllUsers(it) as ArrayList<User>
-                Log.e(TAGGER, "Total: " + users.count())
-                loadChatContacts(users)
+                val data = LocalDataBase.access.getAllUsers(it) as ArrayList<User>
+                allUsers.clear()
+                allUsers.addAll(data)
+                adapter?.notifyDataSetChanged()
             }
         }
     }
@@ -80,34 +83,32 @@ class MainActivity : AppCompatActivity() {
         Common.setActivityInMain(true)
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getUsers, IntentFilter("MAIN_ACTIVITY_GET_CONTACTS"))
-
-        return
-        longToast("Hola: " + sharedPreferences!!.getString("FROM", ""))
-        //allUsers = LocalDataBase.getAllUsers(realm = realm!!, exceptUser = sharedPreferences!!.getString("FROM", ""))
-
     }
 
-    fun loadChatContacts(users: ArrayList<User>) {
-        RecyclerAdapterUtil.Builder(this, users, R.layout.row_user_chat)
+    fun loadChatContacts() {
+
+        adapter = RecyclerAdapterUtil.Builder(this, allUsers, R.layout.row_user_chat)
                 .viewsList(R.id.tvName, R.id.ivPic)
                 .bindView { itemView, item, position, innerViews ->
                     val textView = innerViews[R.id.tvName] as TextView
                     val imageView = innerViews[R.id.ivPic] as CircleImageView
-                    textView.text = users[position].name
-                    Picasso.with(this@MainActivity).load(users[position].avatar).into(imageView)
-                    imageView.borderWidth = 0
+                    textView.text = allUsers[position].name
+                    Picasso.with(this@MainActivity).load(allUsers[position].avatar).into(imageView)
+                    imageView.borderWidth = if (!allUsers[position].isOnline) 0 else 5
 
                 }
                 .addClickListener { item, position ->
-                    Log.e(TAGGER, "Quieres hablar con: " + users[position].name + "(" + users[position].id + ")")
+                    Log.e(TAGGER, "Quieres hablar con: " + allUsers[position].name + "(" + allUsers[position].id + ")")
                     val intent = Intent(this@MainActivity, ChatWindowActivity::class.java)
-                    intent.putExtra("TO", users[position].id)
+                    intent.putExtra("TO", allUsers[position].id)
                     startActivity(intent)
                 }
                 .addLongClickListener { item, position ->
                     //Take action when item is long pressed
-                }
-                .into(rv)
+                }.build()
+
+        rv.adapter = adapter
+
     }
 
     override fun onPause() {
