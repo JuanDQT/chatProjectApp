@@ -6,7 +6,7 @@ import com.juan.chatproject.chat.Author
 import com.stfalcon.chatkit.commons.models.IUser
 
 
-class Message(): IMessage {
+class Message: IMessage {
 
     var mId: String? = null
     var mIuser: IUser? = null

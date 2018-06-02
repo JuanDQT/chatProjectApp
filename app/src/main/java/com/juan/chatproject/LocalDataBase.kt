@@ -37,9 +37,7 @@ class LocalDataBase {
 
         fun getAllUsers(realm: Realm, exceptUser: String = Common.getClientId()): List<User> {
             var ent = 0
-//            var u = realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", ent).findAll().toList()
-            var u = ArrayList(realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", ent).findAll())
-            return u
+            return ArrayList(realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", ent).findAll())
         }
 
     }
