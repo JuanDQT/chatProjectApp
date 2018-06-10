@@ -17,6 +17,7 @@ import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.activity_main.*
 import android.view.MenuInflater
 import android.view.MenuItem
+import com.juan.chatproject.chat.Message
 import io.realm.Realm
 
 
@@ -52,14 +53,18 @@ class MainActivity : AppCompatActivity() {
 
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            intent?.let {
-                val messsage = it.getStringExtra("MESSAGE_TO_ACTIVITY")
-                val position = allUsers.indexOf(allUsers.filter { p -> p.id == it.getStringExtra("ID_FROM_TO_ACTIVITY") }.first())
-                Log.e(TAGGER, "Posicion es: " + position)
-                rv.findViewHolderForAdapterPosition(position).let {
-                    val tvDescription = it.itemView.findViewById<TextView>(R.id.tvDescription)
-                    tvDescription.text = messsage
-                    it.itemView.setBackgroundColor(Color.parseColor("#667fb7"))
+
+
+            intent?.let { int ->
+
+                val estado = Common.isActivityInMain()
+
+                val position = allUsers.indexOf(allUsers.filter { p -> p.id == int.getStringExtra("MESSAGE_CLIENT_ID") }.first())
+
+                rv.findViewHolderForAdapterPosition(position).let { rv ->
+                    val tvDescription = rv.itemView.findViewById<TextView>(R.id.tvDescription)
+                    tvDescription.text = int.getStringExtra("MESSAGE_TEXT")
+                    rv.itemView.setBackgroundColor(Color.parseColor("#667fb7"))
                 }
             }
         }
@@ -114,6 +119,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         Common.setAppForeground(false)
+        //Common.setActivityInMain(false)
     }
 
     override fun onDestroy() {

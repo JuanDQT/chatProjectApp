@@ -112,7 +112,6 @@ public class Common extends Application {
                     try {
 
                         JSONObject obj = (JSONObject) args[0];
-                        Log.e(TAGGER, "El otro user esta escribiendo");
 
                         if (Common.isAppForeground()) {
                             Intent intent = new Intent("INTENT_GET_USER_IS_TYPING");
@@ -150,20 +149,27 @@ public class Common extends Application {
 
                         JSONObject obj = (JSONObject) args[0];
                         Log.e(TAGGER, "Nos ha llegado un simple mensaje!!");
+                        Date temp = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(obj.getString("date_created"));
 
-                        // TODO: Guardar en bbdd como no leidos...
+                        Realm realm = Realm.getDefaultInstance();
+                        Message m = Message.Static.getMessageConstuctor(realm, obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
+                        int messageId = m.getID();
+//                        int messageId = LocalDataBase.access.saveMessage(realm, m);
+                        realm.close();
+                        Log.e(TAGGER, "[MESSAGE_ID_CREATED]: " + messageId);
+
                         if (Common.isAppForeground()) {
                             Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
-                            intent.putExtra("MESSAGE_TO_ACTIVITY", obj.getString("message"));
-                            intent.putExtra("ID_FROM_TO_ACTIVITY", obj.getString("from"));
-                            intent.putExtra("ID_TO_TO_ACTIVITY", obj.getString("to"));
+                            intent.putExtra("MESSAGE_ID", messageId);
+                            intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
+                            intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
                         } else {
                             // Aplicacion cerrada o en background
                             showNotification(obj.getString("from"), obj.getString("message"));
                         }
 
-                    } catch (JSONException e) {
+                    } catch (JSONException | ParseException e) {
                         e.printStackTrace();
                     }
                 }
@@ -184,37 +190,27 @@ public class Common extends Application {
         //socket.disconnect();
     }
 
-    public static Message getMessageConstuctor(String clientFrom, String clientTo, String message) {
-        Message m1 = new Message();
-        User user;
 
-        if (clientTo.equals(Common.getClientId())) {
-            Log.e(TAGGER, "mensaje de entrada");
-            m1.setMId(clientFrom);
-            // TODO: check
-            user = new User(clientFrom, clientFrom, null, true, null, null, 0);
-        } else {
-            Log.e(TAGGER, "mensaje de salida");
-            m1.setMId(clientTo);
-            user = new User(clientFrom, clientFrom, null, true, null, null, 0);
-        }
-
-        m1.setMMessage(message == null ? "" : message);
-        m1.setMIuser(user);
-
-        return m1;
-    }
-
-    public static void addNewMessageToServer(String message, String to) {
+    // Mensaje siempre del local
+    public static Message addNewMessageToServer(Message m) {
         JSONObject json = new JSONObject();
+        Realm realm = Realm.getDefaultInstance();
+//        LocalDataBase.access.saveMessage(realm, m);
         try {
+
+            DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
             json.put("from", getClientId());
-            json.put("to", to);
-            json.put("message", message);
+            json.put("to", m.getUserToId());
+            json.put("message", m.getText());
+            json.put("date_created", df.format(new Date()));
 
             socket.emit("MESSAGE_TO", json);
         } catch (JSONException e) {
             e.printStackTrace();
+        } finally {
+            realm.close();
+            return m;
         }
     }
 

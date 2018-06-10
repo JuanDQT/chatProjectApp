@@ -1,30 +1,80 @@
 package com.juan.chatproject.chat
 
+import android.util.Log
+import com.juan.chatproject.Common
 import com.stfalcon.chatkit.commons.models.IMessage
 import java.util.*
-import com.juan.chatproject.chat.Author
 import com.stfalcon.chatkit.commons.models.IUser
+import io.realm.Realm
+import io.realm.RealmObject
+import io.realm.annotations.Ignore
+import io.realm.annotations.PrimaryKey
+import io.realm.annotations.RealmClass
+import java.io.Serializable
+import kotlin.math.max
 
+open class Message : RealmObject(), IMessage, Serializable {
+    @PrimaryKey
+    public var id: Int = 0
+    private var mID: String = ""
+    private var text: String = ""
+    public var userFrom: User? = null
+    public var userToId: String? = null
+    private var fechaCreado: Date? = null
+    private var fechaRecibido: Date? = null
+    private var fechaLectura: Date? = null
 
-class Message: IMessage {
-
-    var mId: String? = null
-    var mIuser: IUser? = null
-    var mMessage: String? = null
-
-    override fun getId(): String {
-        return mId!!
+    override fun getId(): String? {
+        return mID
     }
 
-    override fun getCreatedAt(): Date {
-        return Date()
+    override fun getText(): String? {
+        return text
     }
 
-    override fun getText(): String {
-        return mMessage!!
+    override fun getUser(): User? {
+        return userFrom
     }
-    override fun getUser(): IUser {
-        return mIuser!!
+
+    override fun getCreatedAt(): Date? {
+        return fechaCreado
+    }
+
+    fun getID(): Int {
+        return this.id
+    }
+
+    fun setFechaLectura(fecha: Date) {
+        this.fechaLectura = fecha
+    }
+
+    companion object Static {
+
+        fun getMessageConstuctor(realm: Realm, clientFrom: String, clientTo: String, message: String, fechaCreado: Date = Date(), fechaRecibido: Date?): Message {
+
+            val m1 = Message()
+
+            realm.executeTransaction {
+
+                var maxID = realm.where(Message::class.java).max("id")
+
+                if (maxID == null)
+                    maxID = 1
+
+                m1.id = maxID.toInt() + 1
+                m1.mID = clientFrom
+                m1.text = message
+                m1.userFrom = realm.where(User::class.java).equalTo("id", clientFrom).findFirst()!!
+                m1.userToId = clientTo
+                m1.fechaCreado = fechaCreado
+                m1.fechaRecibido = fechaRecibido
+
+                realm.copyToRealm(m1)
+            }
+
+            return m1
+        }
+
     }
 
 }
