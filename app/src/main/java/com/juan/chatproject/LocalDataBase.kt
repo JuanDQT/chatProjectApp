@@ -4,6 +4,7 @@ import android.util.Log
 import com.juan.chatproject.chat.Message
 import com.juan.chatproject.chat.User
 import io.realm.Realm
+import io.realm.RealmResults
 import io.realm.Sort
 import org.xml.sax.SAXParseException
 import java.util.*
@@ -59,8 +60,8 @@ class LocalDataBase {
 
         fun getMessageById(realm: Realm, id: Int): Message? {
 
+//            Thread.sleep(2000)
             val m = realm.where(Message::class.java).equalTo("id", id).findFirst()
-            Thread.sleep(2000)
             return m
         }
 
@@ -75,21 +76,20 @@ class LocalDataBase {
             }
         }
 
-        fun getLastMessage(realm: Realm): HashMap<String, List<String>> {
+        fun getLastMessage(realm: Realm, users: RealmResults<User>): HashMap<String, List<String>> {
 
             val lastUsersMessages = hashMapOf<String, List<String>>()
 
-            val i = 0
-            for (u in realm.where(User::class.java).equalTo("banned", i).notEqualTo("id", Common.getClientId()).findAll()) {
+            for (u in users) {
+//            for (u in realm.where(User::class.java).equalTo("banned", i).notEqualTo("id", Common.getClientId()).findAll()) {
 //                val lastMessage = realm.where(Message::class.java).equalTo("userFrom.id", u.id).sort("id", Sort.ASCENDING).findFirst()
                 val lastMessage = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findFirst()
-                // TODO: Coger los ultimos mensajes sin leer, e incrementar segun el color. Si no, cargar el ultimo mensaje
                 lastMessage?.let {
                     Log.i(TAGGER, "Ultimo mensaje: " + it.text)
                     if (it.userFrom!!.id.equals(u.id) && it.getFechaLectura() == null) {
                         // Si el ultimo mensaje no lo has leido, buscamos mas no leidos. Limite 5
                         Log.e(TAGGER, "El ultimo mensaje esta sin leer")
-                        val lastMessagesNotReaded = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findAll().take(6)
+                        val lastMessagesNotReaded = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findAll().take(4)
                         var totalMensajesNoLeidos = 0
                         // Validad que sean los ultimos... Aplicar condicion de fechalectura = null y from = u.id
 
@@ -106,7 +106,7 @@ class LocalDataBase {
 
                         Log.e(TAGGER,"Total mensajes sin leer: " + totalMensajesNoLeidos)
 
-                        lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, "X")
+                        lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, totalMensajesNoLeidos.toString())
                     } else {
                         // recogemos solo un mensaje, el ultimo
                         lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, "0")
