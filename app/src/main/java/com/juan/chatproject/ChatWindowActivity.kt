@@ -97,11 +97,20 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
             intent?.let {
                 val idMessage: Int = it.getIntExtra("MESSAGE_ID", 0)
 
-                realm?.let {
-                    LocalDataBase.getMessageById(it, idMessage)?.let { m ->
-                        if (isCurrentChatUser(m.userFrom!!.id!!, m.userToId!!)) {
+                realm?.let {r ->
+                    LocalDataBase.getMessageById(r, idMessage)?.let { m ->
+                        if (m.userFrom!!.id!!.equals(TARGET_ID)) {
+//                        if (isCurrentChatUser(m.userFrom!!.id!!, m.userToId!!)) {
                             postMessage(m)
                             tvWritting.visibility = View.GONE
+
+                            Log.e(TAGGER, "Mensaje entrada guardado con fecha lectura")
+                            r.executeTransaction {
+                                m.setFechaLectura(Date())
+                                r.copyToRealmOrUpdate(m)
+                            }
+                        } else {
+                            Log.e(TAGGER, "Recibodo mensaje en otra ventana")
                         }
                     }
                 }
@@ -130,7 +139,8 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
 
     fun isCurrentChatUser(idFrom: String, idTo: String): Boolean {
-        return TARGET_ID.equals(idFrom) && CLIENT_ID.equals(idTo)
+        return TARGET_ID.equals(idFrom)
+//        return TARGET_ID.equals(idFrom) && CLIENT_ID.equals(idTo)
     }
 
 
@@ -169,6 +179,8 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
     override fun onBackPressed() {
         super.onBackPressed()
+        LocalBroadcastManager.getInstance(this@ChatWindowActivity).unregisterReceiver(getNewMessage)
+        LocalBroadcastManager.getInstance(this@ChatWindowActivity).unregisterReceiver(getUserIsTyping)
         fromBack = true
     }
 }
