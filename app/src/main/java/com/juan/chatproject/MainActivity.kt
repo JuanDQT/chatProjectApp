@@ -17,8 +17,10 @@ import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.activity_main.*
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.View
 import com.juan.chatproject.chat.Message
 import io.realm.Realm
+import io.realm.annotations.Ignore
 
 
 class MainActivity : AppCompatActivity() {
@@ -36,6 +38,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         sharedPreferences = getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         startService(Intent(this@MainActivity, MyService::class.java))
+        @Ignore
         rv.layoutManager = LinearLayoutManager(this@MainActivity)
         intent?.let {
             it.extras?.let {
@@ -54,19 +57,57 @@ class MainActivity : AppCompatActivity() {
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
+            if (Common.isActivityInMain()) {
+                intent?.let { int ->
 
-            intent?.let { int ->
+                    realm?.let {r ->
+//                        val chats = LocalDataBase.access.getMensajesSinLeer(r, int.getStringExtra("MESSAGE_CLIENT_ID"))
+                        val i = 0
+                        val chats = LocalDataBase.access.getLastMessage(r, r.where(User::class.java).equalTo("banned", i).equalTo("id", int.getStringExtra("MESSAGE_CLIENT_ID")).findAll())
 
-                val estado = Common.isActivityInMain()
+//                        markChatMessage(int.getStringExtra("MESSAGE_CLIENT_ID"), int.getStringExtra("MESSAGE_TEXT"))
+                        if (chats.count() > 0) {
+                            for (chat in chats) {
+                                markChatMessage(chat.key, chat.value[0], chat.value[1].toInt())
+                            }
+                        }
+                    }
 
-                val position = allUsers.indexOf(allUsers.filter { p -> p.id == int.getStringExtra("MESSAGE_CLIENT_ID") }.first())
-
-                rv.findViewHolderForAdapterPosition(position).let { rv ->
-                    val tvDescription = rv.itemView.findViewById<TextView>(R.id.tvDescription)
-                    tvDescription.text = int.getStringExtra("MESSAGE_TEXT")
-                    rv.itemView.setBackgroundColor(Color.parseColor("#667fb7"))
                 }
             }
+        }
+    }
+
+    fun markChatMessage(clientID: String, message: String, counter: Int = 0) {
+        // TODO: Cuando se carguen los contactos de la bbdd automaticamente ya no hara falta ese if
+        if (allUsers.isEmpty()) {
+            return
+        }
+        val position = allUsers.indexOf(allUsers.filter { p -> p.id == clientID }.first())
+        rv.findViewHolderForAdapterPosition(position).let { rv ->
+            val tvDescription = rv.itemView.findViewById<TextView>(R.id.tvDescription)
+            val tvCounter = rv.itemView.findViewById<TextView>(R.id.tvNumber)
+            tvDescription.text = message
+
+            if (counter > 0) {
+                rv.itemView.setBackgroundColor(Color.parseColor(getColorByNumberMessages(counter)))
+                tvCounter.text = if (counter > 3) "*" else "$counter"
+                tvCounter.visibility = View.VISIBLE
+            } else {
+                rv.itemView.setBackgroundColor(Color.parseColor("#dddddd"))
+                tvCounter.text = ""
+                tvCounter.visibility = View.GONE
+            }
+        }
+    }
+
+    fun getColorByNumberMessages(number: Int) :String {
+        return when (number) {
+            1-> "#92A6D4"
+            2-> "#667FB7"
+            3-> "#45609D"
+            4-> "#2C488A"
+            else -> "#2C488A"
         }
     }
 
@@ -88,6 +129,23 @@ class MainActivity : AppCompatActivity() {
         Common.setActivityInMain(true)
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getUsers, IntentFilter("MAIN_ACTIVITY_GET_CONTACTS"))
+
+        val realm = Realm.getDefaultInstance()
+        // De momento, solo recargaremos los chats que hayan sufrido cambios en la mensajeria. No todos.
+        val i = 0
+
+        val chats = LocalDataBase.access.getLastMessage(realm, realm.where(User::class.java).equalTo("banned", i).notEqualTo("id", Common.getClientId()).findAll())
+
+        Log.e(TAGGER, "Mesajes nuevos total: " + chats)
+
+
+        if (chats.count() > 0) {
+            for (chat in chats) {
+                markChatMessage(chat.key, chat.value[0], chat.value[1].toInt())
+            }
+        }
+
+        realm.close()
     }
 
     fun loadChatContacts() {
