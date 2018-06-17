@@ -48,6 +48,10 @@ open class Message : RealmObject(), IMessage, Serializable {
         this.fechaLectura = fecha
     }
 
+    fun getFechaLectura(): Date? {
+        return this.fechaLectura
+    }
+
     companion object Static {
 
         fun getMessageConstuctor(realm: Realm, clientFrom: String, clientTo: String, message: String, fechaCreado: Date = Date(), fechaRecibido: Date?): Message {

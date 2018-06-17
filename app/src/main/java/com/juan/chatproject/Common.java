@@ -27,7 +27,9 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -154,8 +156,8 @@ public class Common extends Application {
                         Realm realm = Realm.getDefaultInstance();
                         Message m = Message.Static.getMessageConstuctor(realm, obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
                         int messageId = m.getID();
+                        Log.e(TAGGER, "***" + m.getText());
 //                        int messageId = LocalDataBase.access.saveMessage(realm, m);
-                        realm.close();
                         Log.e(TAGGER, "[MESSAGE_ID_CREATED]: " + messageId);
 
                         if (Common.isAppForeground()) {
@@ -164,10 +166,18 @@ public class Common extends Application {
                             intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
                             intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+
+                            // TODO
+
+                            // Se espera:
+                            LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
+
                         } else {
                             // Aplicacion cerrada o en background
                             showNotification(obj.getString("from"), obj.getString("message"));
                         }
+
+                        realm.close();
 
                     } catch (JSONException | ParseException e) {
                         e.printStackTrace();

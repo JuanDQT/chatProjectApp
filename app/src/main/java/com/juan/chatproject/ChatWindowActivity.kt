@@ -97,22 +97,27 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
             intent?.let {
                 val idMessage: Int = it.getIntExtra("MESSAGE_ID", 0)
 
-                realm?.let {r ->
-                    LocalDataBase.getMessageById(r, idMessage)?.let { m ->
-                        if (m.userFrom!!.id!!.equals(TARGET_ID)) {
-//                        if (isCurrentChatUser(m.userFrom!!.id!!, m.userToId!!)) {
-                            postMessage(m)
-                            tvWritting.visibility = View.GONE
+                realm?.let { r ->
+                    val mm = r.where(Message::class.java).equalTo("id", idMessage).findFirstAsync()
 
-                            Log.e(TAGGER, "Mensaje entrada guardado con fecha lectura")
-                            r.executeTransaction {
-                                m.setFechaLectura(Date())
-                                r.copyToRealmOrUpdate(m)
+                    mm.addChangeListener<Message> { m ->
+
+                        if (m.isValid) {
+                            if (m.userFrom!!.id!!.equals(TARGET_ID)) {
+                                postMessage(m)
+                                tvWritting.visibility = View.GONE
+                                Log.e(TAGGER, "Mensaje entrada, guardamos en memoria")
+                                r.executeTransaction {
+                                    m.setFechaLectura(Date())
+                                    r.copyToRealmOrUpdate(m)
+                                }
+                            } else {
+                                Log.e(TAGGER, "Recibodo mensaje en otra ventana")
                             }
-                        } else {
-                            Log.e(TAGGER, "Recibodo mensaje en otra ventana")
                         }
+
                     }
+
                 }
 
             }

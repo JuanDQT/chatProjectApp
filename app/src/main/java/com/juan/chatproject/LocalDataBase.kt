@@ -1,5 +1,7 @@
 package com.juan.chatproject
 
+import android.content.Intent
+import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import com.juan.chatproject.chat.Message
 import com.juan.chatproject.chat.User
@@ -116,6 +118,54 @@ class LocalDataBase {
 
             return lastUsersMessages
         }
+
+        fun getLastMessageAsync(realm: Realm, users: ArrayList<User>) {
+
+            val lastUsersMessages = hashMapOf<String, List<String>>()
+
+            for (u in users) {
+                val lastMessage = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findFirst()
+                lastMessage?.let {
+                    Log.i(TAGGER, "Ultimo mensaje: " + it.text)
+                    if (it.userFrom!!.id.equals(u.id) && it.getFechaLectura() == null) {
+                        // Si el ultimo mensaje no lo has leido, buscamos mas no leidos. Limite 5
+                        Log.e(TAGGER, "El ultimo mensaje esta sin leer")
+                        val lastMessagesNotReaded = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findAll().take(4)
+                        var totalMensajesNoLeidos = 0
+
+                        for (m in lastMessagesNotReaded) {
+
+                            if (it.userFrom!!.id.equals(Common.getClientId()))
+                                continue
+
+                            if (!it.userFrom!!.id.equals(u.id))
+                                continue
+
+                            if (m.user!!.id == Common.getClientId())
+                                continue
+
+                            if (m.getFechaLectura() == null) {
+                                totalMensajesNoLeidos += 1
+                                Log.e(TAGGER, "Mensaje sin leer: " + m.text)
+                            }
+                        }
+
+                        Log.e(TAGGER,"Total mensajes sin leer: " + totalMensajesNoLeidos)
+
+                        lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, totalMensajesNoLeidos.toString())
+                    } else {
+                        // recogemos solo un mensaje, el ultimo
+                        lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, "0")
+                    }
+                }
+            }
+
+            val intentMain = Intent("INTENT_GET_SINGLE_ROW_MESSAGE")
+            intentMain.putExtra("DATA", lastUsersMessages)
+            LocalBroadcastManager.getInstance(Common.getContext()).sendBroadcast(Intent(intentMain))
+//            return lastUsersMessages
+        }
+
 
     }
 

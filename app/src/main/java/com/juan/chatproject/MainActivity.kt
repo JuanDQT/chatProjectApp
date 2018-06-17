@@ -59,20 +59,14 @@ class MainActivity : AppCompatActivity() {
 
             if (Common.isActivityInMain()) {
                 intent?.let { int ->
+                    val chats = int.getSerializableExtra("DATA") as HashMap<String, List<String>>
+                    Log.e(TAGGER, "Nos llego data")
 
-                    realm?.let {r ->
-//                        val chats = LocalDataBase.access.getMensajesSinLeer(r, int.getStringExtra("MESSAGE_CLIENT_ID"))
-                        val i = 0
-                        val chats = LocalDataBase.access.getLastMessage(r, r.where(User::class.java).equalTo("banned", i).equalTo("id", int.getStringExtra("MESSAGE_CLIENT_ID")).findAll())
-
-//                        markChatMessage(int.getStringExtra("MESSAGE_CLIENT_ID"), int.getStringExtra("MESSAGE_TEXT"))
-                        if (chats.count() > 0) {
-                            for (chat in chats) {
-                                markChatMessage(chat.key, chat.value[0], chat.value[1].toInt())
-                            }
+                    if (chats.count() > 0) {
+                        for (chat in chats) {
+                            markChatMessage(chat.key, chat.value[0], chat.value[1].toInt())
                         }
                     }
-
                 }
             }
         }
@@ -101,12 +95,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getColorByNumberMessages(number: Int) :String {
+    fun getColorByNumberMessages(number: Int): String {
         return when (number) {
-            1-> "#92A6D4"
-            2-> "#667FB7"
-            3-> "#45609D"
-            4-> "#2C488A"
+            1 -> "#92A6D4"
+            2 -> "#667FB7"
+            3 -> "#45609D"
+            4 -> "#2C488A"
             else -> "#2C488A"
         }
     }
@@ -127,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         Common.setAppForeground(true)
         Common.setActivityInMain(true)
-        LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
+        LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_ROW_MESSAGE"))
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getUsers, IntentFilter("MAIN_ACTIVITY_GET_CONTACTS"))
 
         val realm = Realm.getDefaultInstance()
@@ -177,6 +171,8 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         Common.setAppForeground(false)
+        LocalBroadcastManager.getInstance(this@MainActivity).unregisterReceiver(getNewMessage)
+
         //Common.setActivityInMain(false)
     }
 
