@@ -16,6 +16,7 @@ import kotlin.math.max
 open class Message : RealmObject(), IMessage, Serializable {
     @PrimaryKey
     public var id: Int = 0
+    private var idServidor: Int = 0
     private var mID: String = ""
     private var text: String = ""
     public var userFrom: User? = null
@@ -50,6 +51,10 @@ open class Message : RealmObject(), IMessage, Serializable {
 
     fun getFechaLectura(): Date? {
         return this.fechaLectura
+    }
+
+    fun setIdServidor(value: Int) {
+        this.idServidor = value
     }
 
     companion object Static {
