@@ -7,6 +7,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -20,6 +22,7 @@ import org.json.JSONObject;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmResults;
 import io.socket.client.IO;
 
 import java.net.URISyntaxException;
@@ -42,7 +45,7 @@ public class Common extends Application {
     public static final String SHARED_PREFERENCES_NAME = "PREFERENCES";
     public static final String SHARED_PREFERENCES_ACTIVITY_ACTIVE = "ACTIVE";
     public static final String SHARED_PREFERENCES_ACTIVITY_IN_MAIN = "MAIN_ACTIVE";
-    private static final String TAGGER = "TAGGER";
+    public static final String TAGGER = "TAGGER";
     private static final String IP = "http://192.168.1.116:3000"; // 192.168.44.122
     private static final String ID_DEVICE = "Moto";
 
@@ -54,7 +57,6 @@ public class Common extends Application {
     private static SharedPreferences sharedPreferences;
 
     @Override
-
     public void onCreate() {
         super.onCreate();
         this.mContext = getApplicationContext();
@@ -73,18 +75,26 @@ public class Common extends Application {
     }
 
     public static void connectWebSocket() {
+
         try {
 
             socket = IO.socket(IP);
+
             socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
                     try {
+
+                        Log.e(TAGGER, "Reconectados");
                         JSONObject jsonLogin = new JSONObject();
                         jsonLogin.put("socketID", socket.id());
                         jsonLogin.put("clientID", getClientId());
                         socket.emit("LOGIN", jsonLogin);
-//                        socket.emit("login", "{\"socketID\":  \"" + socket.id() + "\", \"clientID\": \"" + getClientId() + "\" }");
+
+                        Realm realm = Realm.getDefaultInstance();
+                        sendAllMessagesPending(realm);
+                        realm.close();
+
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -148,16 +158,36 @@ public class Common extends Application {
                 public void call(Object... args) {
 
                     try {
-
                         JSONObject obj = (JSONObject) args[0];
-                        Log.e(TAGGER, "Nos ha llegado un simple mensaje!!");
+                        Realm realm = Realm.getDefaultInstance();
+                        if (messageExist(realm, obj.getInt("id"))) {
+                            return;
+                        }
+
+                        // Check if User exist in our database.
+                        // TODO: quizas se puede mejorar
+                        User user = realm.where(User.class).equalTo("id", obj.getString("from")).findFirst();
+                        if (user == null) {
+                            final User newUser = new User(obj.getString("from"), null, null, false, null, null, 0);
+                            realm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm r) {
+                                    r.insertOrUpdate(newUser);
+                                }
+                            });
+                        }
+                        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        //
+                        JSONObject jsonConfirm = new JSONObject();
+                        jsonConfirm.put("id_server", obj.getInt("id"));
+                        jsonConfirm.put("fecha_recepcion", df.format(new Date()));
+                        socket.emit("MESSAGE_CONFIRM_RECEPCION", jsonConfirm);
+                        //
+
                         Date temp = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(obj.getString("date_created"));
 
-                        Realm realm = Realm.getDefaultInstance();
-                        Message m = Message.Static.getMessageConstuctor(realm, obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
+                        Message m = Message.Static.getMessageConstuctor(realm, obj.getInt("id"), obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
                         int messageId = m.getID();
-                        Log.e(TAGGER, "***" + m.getText());
-//                        int messageId = LocalDataBase.access.saveMessage(realm, m);
                         Log.e(TAGGER, "[MESSAGE_ID_CREATED]: " + messageId);
 
                         if (Common.isAppForeground()) {
@@ -167,9 +197,6 @@ public class Common extends Application {
                             intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
 
-                            // TODO
-
-                            // Se espera:
                             LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
 
                         } else {
@@ -182,6 +209,21 @@ public class Common extends Application {
                     } catch (JSONException | ParseException e) {
                         e.printStackTrace();
                     }
+                }
+
+            }).on("GET_UPDATE_MESSAGE_ID_SERVER", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+
+                    Realm realm = Realm.getDefaultInstance();
+                    try {
+                        JSONObject obj = (JSONObject) args[0];
+                        LocalDataBase.access.updateMessageAsSent(realm, obj.getInt("id_pda"), obj.getInt("id_server"));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    realm.close();
                 }
 
             }).on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
@@ -200,6 +242,20 @@ public class Common extends Application {
         //socket.disconnect();
     }
 
+    public static void sendAllMessagesPending(Realm realm) {
+        if (realm != null) {
+            RealmResults<Message> list = realm.where(Message.class).equalTo("idServidor", 0).and().equalTo("mID", Common.getClientId()).findAll();
+            for (Message m : list) {
+                addNewMessageToServer(m);
+            }
+        }
+    }
+
+    private static boolean messageExist(Realm realm, int idServidor) {
+        Message m = realm.where(Message.class).equalTo("idServidor", idServidor).findFirst();
+        return m != null;
+//        return m != null;
+    }
 
     // Mensaje siempre del local
     public static Message addNewMessageToServer(Message m) {
@@ -207,15 +263,16 @@ public class Common extends Application {
         Realm realm = Realm.getDefaultInstance();
 //        LocalDataBase.access.saveMessage(realm, m);
         try {
-
             DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
+            json.put("id_pda", m.getID());
             json.put("from", getClientId());
             json.put("to", m.getUserToId());
             json.put("message", m.getText());
             json.put("date_created", df.format(new Date()));
 
-            socket.emit("MESSAGE_TO", json);
+            if (isOnline() && socket.connected())
+                socket.emit("MESSAGE_TO", json);
         } catch (JSONException e) {
             e.printStackTrace();
         } finally {
@@ -338,7 +395,8 @@ public class Common extends Application {
                     date = sdf.parse(replaced);
                 }
 
-                User u = new User(object.getString("code"),
+                User u = new User(
+                        object.getString("id"),
                         object.getString("name"),
                         object.getString("avatar"),
                         object.getInt("online") == 1,
@@ -355,5 +413,11 @@ public class Common extends Application {
         }
 
         return users;
+    }
+
+    public static boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 }

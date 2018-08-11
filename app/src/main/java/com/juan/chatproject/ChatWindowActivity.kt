@@ -72,7 +72,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
         input.setInputListener({ input ->
             realm?.let {
-                val message = Message.Static.getMessageConstuctor(realm = it, clientFrom = Common.getClientId(), clientTo = TARGET_ID, message = input.toString(), fechaRecibido = null)
+                val message = Message.Static.getMessageConstuctor(realm = it, idServidor = 0,clientFrom = Common.getClientId(), clientTo = TARGET_ID, message = input.toString(), fechaRecibido = null)
                 Common.addNewMessageToServer(message)
                 chatAdapter!!.addToStart(message, true)
             }

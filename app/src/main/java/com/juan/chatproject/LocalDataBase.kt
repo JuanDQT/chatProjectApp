@@ -166,7 +166,16 @@ class LocalDataBase {
 //            return lastUsersMessages
         }
 
+        fun updateMessageAsSent(realm: Realm, idPda: Int, idServer: Int) {
+            val m = realm.where(Message::class.java).equalTo("id", idPda).findFirst()
 
+            realm.executeTransaction {r ->
+                m?.let {
+                    m.setIdServidor(idServer)
+                    r.insertOrUpdate(m)
+                }
+            }
+        }
     }
 
 }

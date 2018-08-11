@@ -21,9 +21,9 @@ import android.view.View
 import com.juan.chatproject.chat.Message
 import io.realm.Realm
 import io.realm.annotations.Ignore
+import android.content.IntentFilter
 
-
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateReceiverListener {
 
     val TAGGER = "TAGGER"
     var allUsers: ArrayList<User> = arrayListOf()
@@ -32,8 +32,15 @@ class MainActivity : AppCompatActivity() {
     var realm: Realm? = null
     var adapter: RecyclerAdapterUtil<User>? = null
 
+    private var networkStateReceiver: NetworkStateReceiver? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        networkStateReceiver = NetworkStateReceiver(this@MainActivity)
+        networkStateReceiver?.addListener(this)
+        this.registerReceiver(networkStateReceiver, IntentFilter(android.net.ConnectivityManager.CONNECTIVITY_ACTION))
+
         realm = Realm.getDefaultInstance()
         setContentView(R.layout.activity_main)
         sharedPreferences = getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -72,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // TODO: errores al reenviar los mensajes
     fun markChatMessage(clientID: String, message: String, counter: Int = 0) {
         // TODO: Cuando se carguen los contactos de la bbdd automaticamente ya no hara falta ese if
         if (allUsers.isEmpty()) {
@@ -172,8 +180,6 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         Common.setAppForeground(false)
         LocalBroadcastManager.getInstance(this@MainActivity).unregisterReceiver(getNewMessage)
-
-        //Common.setActivityInMain(false)
     }
 
     override fun onDestroy() {
@@ -181,6 +187,18 @@ class MainActivity : AppCompatActivity() {
         realm?.close()
         Common.setAppForeground(false)
         Common.setActivityInMain(false)
+        networkStateReceiver?.removeListener(this);
+        this.unregisterReceiver(networkStateReceiver);
+    }
+
+    override fun onNetworkAvailable() {
+        // TODO: Quizas en un futuro enviarlos todos de golpe y no 1 x 1
+        //Common.sendAllMessagesPending(realm)
+        //Log.d(TAGGER, "Se ha recuperado la conexion a la red")
+    }
+
+    override fun onNetworkUnavailable() {
+        Log.d(TAGGER, "Se ha perdido la conexion a la red")
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

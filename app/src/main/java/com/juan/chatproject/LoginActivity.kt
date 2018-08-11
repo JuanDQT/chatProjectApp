@@ -10,7 +10,8 @@ import kotlinx.android.synthetic.main.activity_login.*
 
 class LoginActivity : AppCompatActivity() {
 
-    val numbersAvailable = mapOf<String, String>("627134487" to "JQUISPE", "1" to "ANNEMIJN", "0" to "EMULATOR")
+    val numbersAvailable = mapOf<String, String>("1" to "1", "2" to "2", "3" to "3")
+//    val numbersAvailable = mapOf<String, String>("JQUISPE" to "1", "ANNEMIJN" to "2", "EMULATOR" to "3")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
