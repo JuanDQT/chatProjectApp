@@ -148,19 +148,33 @@ public class Common extends Application {
                     Realm realm = Realm.getDefaultInstance();
                     Integer[] idList = new Integer[array.length()];
                     try {
-                        for(int i = 0; i < array.length(); i++) {
+                        for (int i = 0; i < array.length(); i++) {
                             idList[i] = array.getJSONObject(i).getInt("id");
                         }
                     } catch (JSONException e) {
                         Log.e(TAGGER, "Error convirtiendo ids en int");
                     }
 
-//                    List<Message> messages = realm.where(Message.class).in("idServidor", idList).findAll();
                     List<Message> messages = realm.where(Message.class).in("idServidor", idList).and().isNotNull("fechaLectura").findAll();
 
                     for (Message m : messages) {
                         notifyMessageReaded(m.getIdServidor(), m.getFechaLectura());
                     }
+
+                    realm.close();
+                }
+
+            }).on("GET_SEARCH_USERS_BY_NAME", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+
+                    JSONArray array = (JSONArray) args[0];
+                    ArrayList<User> users = getUsersFromJSONArray(array);
+                    Realm realm = Realm.getDefaultInstance();
+                    //LocalDataBase.access.updateUsers(realm, users);
+                    Intent data = new Intent("SERCH_USERS_DATA");
+                    data.putExtra("users", users);
+                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(data));
 
                     realm.close();
                 }
@@ -439,6 +453,19 @@ public class Common extends Application {
         }
 
         return users;
+    }
+
+    public static void searchUsersByName(String name) {
+        if (Common.isOnline() && socket.connected()) {
+            JSONObject json = new JSONObject();
+            try {
+                json.put("user_from", Common.getClientId());
+                json.put("name", name);
+                socket.emit("SEARCH_USERS_BY_NAME", json);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static boolean isOnline() {

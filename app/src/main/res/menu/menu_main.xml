@@ -5,4 +5,11 @@
         android:icon="@android:drawable/ic_menu_rotate"
         app:showAsAction="ifRoom|withText"
         android:title="Recargar" />
+
+    <item
+        android:id="@+id/itSearch"
+        android:icon="@android:drawable/ic_menu_search"
+        app:showAsAction="ifRoom|withText"
+        android:title="Buscar Contactos" />
+
 </menu>

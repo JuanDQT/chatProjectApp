@@ -14,8 +14,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:theme="@style/AppThemeNoToolbar"
-            android:name=".LoginActivity">
+            android:name=".LoginActivity"
+            android:theme="@style/AppThemeNoToolbar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -23,13 +23,14 @@
             </intent-filter>
         </activity>
         <activity
-            android:launchMode="singleTop"
             android:name=".ChatWindowActivity"
+            android:launchMode="singleTop"
             android:theme="@style/AppThemeNoToolbar" />
-        <activity
-            android:name=".MainActivity"></activity>
+        <activity android:name=".MainActivity" />
 
         <service android:name=".MyService" />
+
+        <activity android:name=".ContactosList"></activity>
     </application>
 
 </manifest>

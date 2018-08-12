@@ -212,6 +212,11 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
                 Common.requestAllChatsAvailable()
                 true
             }
+            R.id.itSearch -> {
+                startActivity(Intent(this@MainActivity, ContactosList::class.java))
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
