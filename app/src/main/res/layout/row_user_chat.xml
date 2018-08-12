@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:background="#ddd"
@@ -19,33 +20,67 @@
         android:alpha="0.6"
         android:src="@drawable/ic_launcher_background"
         app:civ_border_color="#62d455"
-        app:civ_border_width="2dp" />
+        />
 
-    <LinearLayout
-        android:paddingTop="10dp"
-        android:paddingLeft="10dp"
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:paddingEnd="20dp"
         android:layout_weight="0.8"
-        android:layout_width="0dp"
-        android:orientation="vertical"
-        android:layout_height="match_parent">
-
-        <TextView
-            android:id="@+id/tvName"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-             />
-
+        android:paddingLeft="10dp"
+        android:paddingTop="10dp">
 
         <TextView
             android:id="@+id/tvDescription"
-            android:textSize="12dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="15dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
             android:maxLines="2"
-            android:ellipsize="end" />
+            android:textSize="12dp"
+            android:typeface="sans"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/tvNumber"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvName"
+            app:layout_constraintVertical_bias="0.17000002"
+            tools:text="Mensaje" />
 
-    </LinearLayout>
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:textSize="12sp"
+            android:typeface="sans"
+            app:layout_constraintEnd_toStartOf="@+id/tvNumber"
+            app:layout_constraintHorizontal_bias="0.888"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Persona" />
+
+
+
+        <TextView
+            android:textColor="#fff"
+            android:gravity="center"
+            android:id="@+id/tvNumber"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="8dp"
+            android:textAlignment="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:background="@drawable/circle_drawable"
+            app:layout_constraintTop_toTopOf="parent"
+            android:visibility="gone"
+             />
+
+    </android.support.constraint.ConstraintLayout>
 
 
 </LinearLayout>
