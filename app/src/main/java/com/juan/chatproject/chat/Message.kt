@@ -1,25 +1,18 @@
 package com.juan.chatproject.chat
 
-import android.util.Log
-import com.juan.chatproject.Common
-import com.juan.chatproject.LocalDataBase
 import com.stfalcon.chatkit.commons.models.IMessage
 import java.util.*
-import com.stfalcon.chatkit.commons.models.IUser
 import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
-import io.realm.annotations.RealmClass
 import java.io.Serializable
-import kotlin.math.max
 
 open class Message : RealmObject(), IMessage, Serializable {
     @PrimaryKey
     public var id: Int = 0
     private var idServidor: Int = 0
     // Solo selecciona el tipo de chat que es.
-    private var mID: String = ""
+    private var userFromId: String = ""
     private var text: String = ""
     public var userFrom: User? = null
     public var userToId: String? = null
@@ -28,7 +21,7 @@ open class Message : RealmObject(), IMessage, Serializable {
     private var fechaLectura: Date? = null
 
     override fun getId(): String? {
-        return mID
+        return userFromId
     }
 
     override fun getText(): String? {
@@ -86,7 +79,7 @@ open class Message : RealmObject(), IMessage, Serializable {
 
                 m1.idServidor = idServidor
                 m1.id = maxID.toInt() + 1
-                m1.mID = clientFrom
+                m1.userFromId = clientFrom
                 m1.text = message
 
 

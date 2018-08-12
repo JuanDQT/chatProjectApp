@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
             if (Common.isActivityInMain()) {
                 intent?.let { int ->
                     val chats = int.getSerializableExtra("DATA") as HashMap<String, List<String>>
-                    Log.e(TAGGER, "Nos llego data")
+                        Log.e(TAGGER, "Nos llego data")
 
                     if (chats.count() > 0) {
                         for (chat in chats) {

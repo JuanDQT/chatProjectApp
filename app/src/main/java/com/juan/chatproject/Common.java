@@ -244,7 +244,7 @@ public class Common extends Application {
 
     public static void sendAllMessagesPending(Realm realm) {
         if (realm != null) {
-            RealmResults<Message> list = realm.where(Message.class).equalTo("idServidor", 0).and().equalTo("mID", Common.getClientId()).findAll();
+            RealmResults<Message> list = realm.where(Message.class).equalTo("idServidor", 0).and().equalTo("userFromId", Common.getClientId()).findAll();
             for (Message m : list) {
                 addNewMessageToServer(m);
             }
