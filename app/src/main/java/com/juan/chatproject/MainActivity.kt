@@ -79,7 +79,6 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         }
     }
 
-    // TODO: errores al reenviar los mensajes
     fun markChatMessage(clientID: String, message: String, counter: Int = 0) {
         // TODO: Cuando se carguen los contactos de la bbdd automaticamente ya no hara falta ese if
         if (allUsers.isEmpty()) {

@@ -67,17 +67,6 @@ class LocalDataBase {
             return m
         }
 
-        fun markMessageAsRead(realm: Realm, withClientID: String) {
-            realm.executeTransaction {
-                val messages = realm.where(Message::class.java).equalTo("userFrom.id", withClientID).isNull("fechaLectura").findAll()
-                Log.e("TAGGER", "A actualizar: " + messages.count())
-                for (m in messages) {
-                    m.setFechaLectura(Date())
-                    realm.copyToRealmOrUpdate(m)
-                }
-            }
-        }
-
         fun getLastMessage(realm: Realm, users: RealmResults<User>): HashMap<String, List<String>> {
 
             val lastUsersMessages = hashMapOf<String, List<String>>()

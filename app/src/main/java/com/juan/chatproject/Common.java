@@ -101,22 +101,6 @@ public class Common extends Application {
                 }
 
                 // NOT USED
-            }).on("home", new Emitter.Listener() {
-                @Override
-                public void call(Object... args) {
-
-                    JSONObject obj = (JSONObject) args[0];
-
-                    try {
-                        Intent intent = new Intent("GET_MESSAGES");
-                        intent.putExtra("DATA_TO_ACTIVITY", obj.getString("data"));
-                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-
             }).on("GET_USER_IS_TYPING", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
@@ -135,7 +119,7 @@ public class Common extends Application {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-
+                    // removed?
                 }
 
             }).on("GET_ALL_CHATS_AVAILABLE", new Emitter.Listener() {
@@ -150,6 +134,34 @@ public class Common extends Application {
                     if (Common.isAppForeground()) {
                         LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
                     }
+                    realm.close();
+                }
+
+            }).on("GET_PENDING_MESSAGES_READED", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+
+                    JSONArray array = (JSONArray) args[0];
+                    if (array.length() <= 0)
+                        return;
+
+                    Realm realm = Realm.getDefaultInstance();
+                    Integer[] idList = new Integer[array.length()];
+                    try {
+                        for(int i = 0; i < array.length(); i++) {
+                            idList[i] = array.getJSONObject(i).getInt("id");
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAGGER, "Error convirtiendo ids en int");
+                    }
+
+//                    List<Message> messages = realm.where(Message.class).in("idServidor", idList).findAll();
+                    List<Message> messages = realm.where(Message.class).in("idServidor", idList).and().isNotNull("fechaLectura").findAll();
+
+                    for (Message m : messages) {
+                        notifyMessageReaded(m.getIdServidor(), m.getFechaLectura());
+                    }
+
                     realm.close();
                 }
 
@@ -196,9 +208,7 @@ public class Common extends Application {
                             intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
                             intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
-
                             LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
-
                         } else {
                             // Aplicacion cerrada o en background
                             showNotification(obj.getString("from"), obj.getString("message"));
@@ -254,7 +264,6 @@ public class Common extends Application {
     private static boolean messageExist(Realm realm, int idServidor) {
         Message m = realm.where(Message.class).equalTo("idServidor", idServidor).findFirst();
         return m != null;
-//        return m != null;
     }
 
     // Mensaje siempre del local
@@ -269,7 +278,7 @@ public class Common extends Application {
             json.put("from", getClientId());
             json.put("to", m.getUserToId());
             json.put("message", m.getText());
-            json.put("date_created", df.format(new Date()));
+            json.put("date_created", m.getCreatedAt() == null ? df.format(new Date()) : df.format(m.getCreatedAt()));
 
             if (isOnline() && socket.connected())
                 socket.emit("MESSAGE_TO", json);
@@ -295,6 +304,23 @@ public class Common extends Application {
         }
     }
 
+    public static void notifyMessageReaded(int idServidor, Date fechaLectura) {
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+        if (Common.isOnline() && socket.connected()) {
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("id_server", idServidor);
+                jsonObject.put("fecha_lectura", sdf.format(fechaLectura));
+                socket.emit("MESSAGE_CONFIRM_LECTURA", jsonObject);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+
+    }
 
     public static void notifyTyping(String to) {
         JSONObject json = new JSONObject();
@@ -403,7 +429,7 @@ public class Common extends Application {
                         date,
                         null,
                         object.getInt("banned")
-                        );
+                );
                 users.add(u);
 
             }

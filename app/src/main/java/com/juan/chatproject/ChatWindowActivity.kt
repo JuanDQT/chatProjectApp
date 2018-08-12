@@ -38,7 +38,6 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
         sharedPreferences = getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
         CLIENT_ID = sharedPreferences!!.getString("FROM", "")
         TARGET_ID = intent.extras.getString("TO")
-        LocalDataBase.markMessageAsRead(realm!!, TARGET_ID)
 
         val urlImage = LocalDataBase.getAllUsers(realm = realm!!, exceptUser = CLIENT_ID).filter { p -> p.id == TARGET_ID }.first().avatar
         Picasso.with(this@ChatWindowActivity).load(urlImage).into(profile_image)
@@ -51,6 +50,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
         chatList.setAdapter(chatAdapter)
         // Cargamos los antiguos
         val olderMessages = LocalDataBase.access.getOlderMessages(realm!!, TARGET_ID)
+        checkIfNotReaded(realm!!, olderMessages)
         chatAdapter!!.addToEnd(olderMessages, true)
 
         if (!olderMessages.isEmpty())
@@ -107,10 +107,13 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
                                 postMessage(m)
                                 tvWritting.visibility = View.GONE
                                 Log.e(TAGGER, "Mensaje entrada, guardamos en memoria")
-                                r.executeTransaction {
+                                r.executeTransaction {realm ->
                                     m.setFechaLectura(Date())
-                                    r.copyToRealmOrUpdate(m)
+                                    realm.copyToRealmOrUpdate(m)
                                 }
+                                // Notificamos la fecha lectura a los mensajes entrantes
+                                if (m.getIdServidor() != 0 && Common.getClientId() != m.userFrom!!.id)
+                                    Common.notifyMessageReaded(m.getIdServidor(), Date())
                             } else {
                                 Log.e(TAGGER, "Recibodo mensaje en otra ventana")
                             }
@@ -158,9 +161,29 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
                 if (!olderMessages.isEmpty()) {
                     lastMessageId = olderMessages.first().id
                     chatAdapter!!.addToEnd(olderMessages, true)
+
+                    checkIfNotReaded(it, olderMessages)
                 }
             }
         }
+    }
+
+    // Nada mas entrar, te asigna una hora de lectura
+    fun checkIfNotReaded(realm: Realm, messages: List<Message>) {
+
+        realm.executeTransaction {
+            for (m in messages) {
+                // Actualmente ya te viene filtrados el userfrom
+                if (m.getFechaLectura() == null && m.userFrom!!.id!! != Common.getClientId()) {
+                    m.setFechaLectura(Date())
+                    it.insertOrUpdate(m)
+                    // Se supone que si te llegan mensajes, es porque ya tienen idServidor
+                    Common.notifyMessageReaded(m.getIdServidor(), Date())
+                }
+            }
+
+        }
+
     }
 
     override fun onResume() {
