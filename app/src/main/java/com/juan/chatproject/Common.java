@@ -12,6 +12,7 @@ import android.net.NetworkInfo;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.juan.chatproject.chat.Message;
 import com.juan.chatproject.chat.User;
@@ -84,23 +85,37 @@ public class Common extends Application {
                 @Override
                 public void call(Object... args) {
                     try {
+                        Realm realm = Realm.getDefaultInstance();
 
+                        JSONObject contactsJSON = new JSONObject();
+                        contactsJSON.put("id_user", getClientId());
+
+                        JSONArray ids = new JSONArray();
+                        List<String> listId = User.access.getIdCurrentContacts(realm);
+                        if (listId != null) {
+                            for(String id: listId) {
+                                ids.put(id);
+                            }
+                        }
+                        contactsJSON.put("ids", ids);
+
+                        socket.emit("LOGIN", contactsJSON);
+                        /*
+                        //requestAllChatsAvailable();
                         Log.e(TAGGER, "Reconectados");
                         JSONObject jsonLogin = new JSONObject();
-                        jsonLogin.put("socketID", socket.id());
-                        jsonLogin.put("clientID", getClientId());
-                        socket.emit("LOGIN", jsonLogin);
+//                        jsonLogin.put("socketID", socket.id());
+                        //socket.emit("LOGIN", jsonLogin);
 
-                        Realm realm = Realm.getDefaultInstance();
-                        sendAllMessagesPending(realm);
+
+                        //sendAllMessagesPending(realm);
+                        */
                         realm.close();
 
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
-
-                // NOT USED
             }).on("GET_USER_IS_TYPING", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
@@ -122,19 +137,64 @@ public class Common extends Application {
                     // removed?
                 }
 
-            }).on("GET_ALL_CHATS_AVAILABLE", new Emitter.Listener() {
+            }).on("GET_LOGIN_RESPONSE", new Emitter.Listener() {
+//            }).on("GET_ALL_CHATS_AVAILABLE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
 
-                    JSONArray array = (JSONArray) args[0];
-                    List<User> users = getUsersFromJSONArray(array);
-                    Realm realm = Realm.getDefaultInstance();
-                    LocalDataBase.access.updateUsers(realm, users);
+                    try(Realm realm = Realm.getDefaultInstance()) {
 
-                    if (Common.isAppForeground()) {
-                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
+                        List<User> users = realm.where(User.class).equalTo("available", true).findAll();
+                        Log.e(TAGGER, "[GET_LOGIN_RESPONSE][ANTES}: " + users.size());
+
+                        JSONObject response = (JSONObject) args[0];
+
+                        JSONObject contacts = response.getJSONObject("contacts");
+
+                        // Actualizar contactos
+                        final JSONArray contactsUpdate = contacts.getJSONArray("disable");
+                        final ArrayList<Integer> idsToDisable = new ArrayList<>();
+
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                try {
+                                    for(int i = 0; i < contactsUpdate.length(); i++) {
+                                        idsToDisable.add(contactsUpdate.getInt(i));
+
+                                        User u = realm.where(User.class).equalTo("id", contactsUpdate.getString(i)).findFirst();
+                                        if (u != null) {
+                                            u.setAvailable(false);
+                                            realm.copyToRealmOrUpdate(u);
+                                        }
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        });
+
+                        // Anadir contactos nuevos
+                        final JSONArray contactsAdd = contacts.getJSONArray("add");
+
+                        users = getUsersFromJSONArray(contactsAdd);
+                        LocalDataBase.access.updateUsers(realm, users);
+
+
+                        users = realm.where(User.class).equalTo("available", true).findAll();
+                        Log.e(TAGGER, "[GET_LOGIN_RESPONSE][ANTES}: " + users.size());
+
+                        // Actualizar mensajes. Remove ?
+                        if (Common.isAppForeground()) {
+                            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
+                        }
+
+                        realm.close();
+                    } catch (JSONException exc) {
+                        Log.e(TAGGER, "Error: " + exc.getMessage());
                     }
-                    realm.close();
+
                 }
 
             }).on("GET_PENDING_MESSAGES_READED", new Emitter.Listener() {
@@ -182,7 +242,7 @@ public class Common extends Application {
             }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-
+                    // TODO: No recibe los mensajes cuando te acabas de instalar la aff y iniciar sesion offline, y despues actovar wifi. Solucion: primero sincronziar contactos despues m,emnsajes
                     try {
                         JSONObject obj = (JSONObject) args[0];
                         Realm realm = Realm.getDefaultInstance();
@@ -191,10 +251,10 @@ public class Common extends Application {
                         }
 
                         // Check if User exist in our database.
-                        // TODO: quizas se puede mejorar
+                        // TODO: quizas se puede mejorar.. Si te escriben un mensaje se entiende que se establece los contactos para los dos. Validar
                         User user = realm.where(User.class).equalTo("id", obj.getString("from")).findFirst();
                         if (user == null) {
-                            final User newUser = new User(obj.getString("from"), null, null, false, null, null, 0);
+                            final User newUser = new User(obj.getString("from"), null, null, false, null, null, false, false, true);
                             realm.executeTransaction(new Realm.Transaction() {
                                 @Override
                                 public void execute(Realm r) {
@@ -306,9 +366,11 @@ public class Common extends Application {
 
     public static void requestAllChatsAvailable() {
 
-        if (socket == null || !Common.isAppForeground())
+        if (socket == null || !socket.connected() || !Common.isOnline() || mContext == null){
+//        if (socket == null || !Common.isAppForeground() || !socket.connected() || !Common.isOnline() || mContext == null){
+            //Toast.makeText(mContext, mContext.getString(R.string.network_error), Toast.LENGTH_SHORT).show();
             return;
-
+        }
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("FROM", getClientId());
@@ -442,7 +504,9 @@ public class Common extends Application {
                         object.getInt("online") == 1,
                         date,
                         null,
-                        object.getInt("banned")
+                        object.getInt("banned") == 1,
+                        object.isNull("pending"),
+                        true
                 );
                 users.add(u);
 

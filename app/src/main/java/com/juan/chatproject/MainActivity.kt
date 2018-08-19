@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
             }
         }
         loadChatContacts()
+
     }
 
     val getNewMessage = object : BroadcastReceiver() {
@@ -115,7 +116,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
     val getUsers = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             realm?.let {
-                val data = LocalDataBase.access.getAllUsers(it) as ArrayList<User>
+                val data = LocalDataBase.getAllUsers(it) as ArrayList<User>
                 allUsers.clear()
                 allUsers.addAll(data)
                 adapter?.notifyDataSetChanged()
@@ -133,9 +134,8 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
 
         val realm = Realm.getDefaultInstance()
         // De momento, solo recargaremos los chats que hayan sufrido cambios en la mensajeria. No todos.
-        val i = 0
 
-        val chats = LocalDataBase.access.getLastMessage(realm, realm.where(User::class.java).equalTo("banned", i).notEqualTo("id", Common.getClientId()).findAll())
+        val chats = LocalDataBase.getLastMessage(realm, realm.where(User::class.java).equalTo("banned", false).notEqualTo("id", Common.getClientId()).findAll())
 
         Log.e(TAGGER, "Mesajes nuevos total: " + chats)
 
@@ -209,7 +209,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         return when (item?.itemId) {
             R.id.itReload -> {
-                Common.requestAllChatsAvailable()
+//                Common.requestAllChatsAvailable()
                 true
             }
             R.id.itSearch -> {
