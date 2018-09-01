@@ -18,7 +18,9 @@ import android.widget.TextView
 import com.juan.chatproject.chat.User
 import com.squareup.picasso.Picasso
 import com.thetechnocafe.gurleensethi.liteutils.RecyclerAdapterUtil
+import com.thetechnocafe.gurleensethi.liteutils.shortToast
 import de.hdodenhof.circleimageview.CircleImageView
+import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_contactos_list.*
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -84,8 +86,56 @@ class ContactosList : AppCompatActivity() {
                     val btnAction = view.findViewById<Button>(R.id.btnAction)
                     val civPic = view.findViewById<CircleImageView>(R.id.civPic)
                     tvName.text = allUsers[position].name
-                    btnAction.text = getString(R.string.enviar_solicitud)
+                    var action = "A" // A --> Add, R --> Remove contact, U --> Remove linea solicitud. Por defecti es A
+
+
+                    if (allUsers[position].pending == null) {
+                        btnAction.text = getString(R.string.enviar_solicitud)
+//                        action = "A"
+                    } else {
+                        allUsers[position].pending?.let {condition ->
+                            btnAction.text = if (condition) getString(R.string.solicitud_enviada) else getString(R.string.eliminar_contacto)
+
+                            action = if (condition)  "U" else "R"
+                        }
+                    }
                     Picasso.with(this@ContactosList).load(allUsers[position].avatar).into(civPic)
+
+                    btnAction.setOnClickListener {
+                        shortToast("Accion: $action")
+
+                        if (Common.setContactoStatus(allUsers[position].id, action)) {
+
+                            var valorContacto: Boolean? = null
+                            when (action) {
+                                "A" -> {
+                                    btnAction.text = getString(R.string.solicitud_enviada)
+                                    valorContacto = true
+                                    action = "U"
+                                }
+                                "R", "U" -> {
+                                    btnAction.text = getString(R.string.enviar_solicitud)
+                                    valorContacto = null
+                                    action = "A"
+
+                                }
+
+                            }
+                            // TODO: VALIDAR...
+
+                            allUsers[position].pending = valorContacto
+                            Realm.getDefaultInstance().use {
+                                it.executeTransaction {r->
+                                    val user = r.where(User::class.java).equalTo("id", allUsers[position].id).findFirst()
+                                    user?.let {u->
+                                        u.pending = valorContacto
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+
 //
                     builder.setView(view)
                     builder.show()

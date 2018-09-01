@@ -546,6 +546,23 @@ public class Common extends Application {
         }
     }
 
+    public static boolean setContactoStatus(String idUserTo, String action) {
+        if (Common.isOnline() && socket.connected()) {
+            JSONObject json = new JSONObject();
+            try {
+                json.put("id_user_from", Common.getClientId());
+                json.put("id_user_to", idUserTo);
+                json.put("action", action);
+                socket.emit("SET_CONTACTO_STATUS", json);
+
+                return true;
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
     public static boolean isOnline() {
         ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
