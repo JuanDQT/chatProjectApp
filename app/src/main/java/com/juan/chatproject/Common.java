@@ -101,7 +101,6 @@ public class Common extends Application {
 
                         socket.emit("LOGIN", contactsJSON);
                         /*
-                        //requestAllChatsAvailable();
                         Log.e(TAGGER, "Reconectados");
                         JSONObject jsonLogin = new JSONObject();
 //                        jsonLogin.put("socketID", socket.id());
@@ -254,12 +253,13 @@ public class Common extends Application {
                 @Override
                 public void call(Object... args) {
 
+                    Realm realm = Realm.getDefaultInstance();
                     JSONArray array = (JSONArray) args[0];
                     ArrayList<User> users = getUsersFromJSONArray(array);
-                    Realm realm = Realm.getDefaultInstance();
                     //LocalDataBase.access.updateUsers(realm, users);
                     Intent data = new Intent("SERCH_USERS_DATA");
                     data.putExtra("users", users);
+                    Log.i(TAGGER, "***Total encontrados: " + users.size());
                     LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(data));
 
                     realm.close();
@@ -394,22 +394,6 @@ public class Common extends Application {
         }
     }
 
-    public static void requestAllChatsAvailable() {
-
-        if (socket == null || !socket.connected() || !Common.isOnline() || mContext == null){
-//        if (socket == null || !Common.isAppForeground() || !socket.connected() || !Common.isOnline() || mContext == null){
-            //Toast.makeText(mContext, mContext.getString(R.string.network_error), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        try {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("FROM", getClientId());
-            socket.emit("ALL_CHATS_AVAILABLE", jsonObject);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void notifyMessageReaded(int idServidor, Date fechaLectura) {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -535,7 +519,7 @@ public class Common extends Application {
                         date,
                         null,
                         object.getInt("banned") == 1,
-                        object.isNull("pending"),
+                        object.isNull("pending")? null: object.getInt("pending") == 1, // --> Pendiende. NULL = nada, true =
                         true
                 );
                 users.add(u);
@@ -553,7 +537,7 @@ public class Common extends Application {
         if (Common.isOnline() && socket.connected()) {
             JSONObject json = new JSONObject();
             try {
-                json.put("user_from", Common.getClientId());
+                json.put("id_user_from", Common.getClientId());
                 json.put("name", name);
                 socket.emit("SEARCH_USERS_BY_NAME", json);
             } catch (JSONException e) {

@@ -11,6 +11,8 @@ import kotlin.collections.ArrayList
 
 open class User(@PrimaryKey private var id: String? = "", private var name: String? = "", private var avatar: String? = "", var isOnline: Boolean = false, private var lastSeen: Date? = null, private var latestMessage: String? = null, var banned: Boolean = false, var pending: Boolean = true, var available: Boolean = true) : RealmObject(), IUser, Serializable {
 
+    // Leyenda
+    // Pending: // NULL = no hay registros de nada, true = pendiente, false = ya lo tienes anadido
     override fun getId(): String? {
         return id
     }

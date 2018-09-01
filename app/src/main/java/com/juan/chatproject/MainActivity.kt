@@ -213,10 +213,6 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         return when (item?.itemId) {
-            R.id.itReload -> {
-//                Common.requestAllChatsAvailable()
-                true
-            }
             R.id.itSearch -> {
                 startActivity(Intent(this@MainActivity, ContactosList::class.java))
                 true
