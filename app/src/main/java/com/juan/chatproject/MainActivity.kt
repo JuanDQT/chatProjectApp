@@ -87,18 +87,21 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         }
         val position = allUsers.indexOf(allUsers.filter { p -> p.id == clientID }.first())
         rv.findViewHolderForAdapterPosition(position).let { rv ->
-            val tvDescription = rv.itemView.findViewById<TextView>(R.id.tvDescription)
-            val tvCounter = rv.itemView.findViewById<TextView>(R.id.tvNumber)
-            tvDescription.text = message
 
-            if (counter > 0) {
-                rv.itemView.setBackgroundColor(Color.parseColor(getColorByNumberMessages(counter)))
-                tvCounter.text = if (counter > 3) "*" else "$counter"
-                tvCounter.visibility = View.VISIBLE
-            } else {
-                rv.itemView.setBackgroundColor(Color.parseColor("#dddddd"))
-                tvCounter.text = ""
-                tvCounter.visibility = View.GONE
+            rv?.let {
+                val tvDescription = rv.itemView.findViewById<TextView>(R.id.tvDescription)
+                val tvCounter = rv.itemView.findViewById<TextView>(R.id.tvNumber)
+                tvDescription.text = message
+
+                if (counter > 0) {
+                    rv.itemView.setBackgroundColor(Color.parseColor(getColorByNumberMessages(counter)))
+                    tvCounter.text = if (counter > 3) "*" else "$counter"
+                    tvCounter.visibility = View.VISIBLE
+                } else {
+                    rv.itemView.setBackgroundColor(Color.parseColor("#dddddd"))
+                    tvCounter.text = ""
+                    tvCounter.visibility = View.GONE
+                }
             }
         }
     }

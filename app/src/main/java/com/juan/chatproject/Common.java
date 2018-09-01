@@ -134,11 +134,9 @@ public class Common extends Application {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    // removed?
                 }
 
             }).on("GET_LOGIN_RESPONSE", new Emitter.Listener() {
-//            }).on("GET_ALL_CHATS_AVAILABLE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
 
@@ -183,20 +181,39 @@ public class Common extends Application {
 
 
                         users = realm.where(User.class).equalTo("available", true).findAll();
-                        Log.e(TAGGER, "[GET_LOGIN_RESPONSE][ANTES}: " + users.size());
+                        Log.e(TAGGER, "[GET_LOGIN_RESPONSE][ANTES]: " + users.size());
 
+                        // Procesamos mensajes
+                        final JSONArray newMessages = response.getJSONArray("messages");
+
+                        for (int i = 0; i < newMessages.length(); i++) {
+                            try {
+                                processMessage(realm, newMessages.getJSONObject(i));
+                            } catch (JSONException | ParseException e){
+                                e.printStackTrace();
+                            }
+                        }
+
+
+
+
+                        sendAllMessagesPending(realm);
+                        realm.close();
                         // Actualizar mensajes. Remove ?
+
+
                         if (Common.isAppForeground()) {
+                            // Actualiza las vistas de main
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
                         }
 
-                        realm.close();
                     } catch (JSONException exc) {
                         Log.e(TAGGER, "Error: " + exc.getMessage());
                     }
 
                 }
 
+                // Preguntamos si tienen algun mensaje leido pendiente de enviar
             }).on("GET_PENDING_MESSAGES_READED", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
@@ -262,31 +279,9 @@ public class Common extends Application {
                                 }
                             });
                         }
-                        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        //
-                        JSONObject jsonConfirm = new JSONObject();
-                        jsonConfirm.put("id_server", obj.getInt("id"));
-                        jsonConfirm.put("fecha_recepcion", df.format(new Date()));
-                        socket.emit("MESSAGE_CONFIRM_RECEPCION", jsonConfirm);
-                        //
 
-                        Date temp = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(obj.getString("date_created"));
 
-                        Message m = Message.Static.getMessageConstuctor(realm, obj.getInt("id"), obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
-                        int messageId = m.getID();
-                        Log.e(TAGGER, "[MESSAGE_ID_CREATED]: " + messageId);
-
-                        if (Common.isAppForeground()) {
-                            Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
-                            intent.putExtra("MESSAGE_ID", messageId);
-                            intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
-                            intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
-                            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
-                            LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
-                        } else {
-                            // Aplicacion cerrada o en background
-                            showNotification(obj.getString("from"), obj.getString("message"));
-                        }
+                        processMessage(realm, obj);
 
                         realm.close();
 
@@ -332,6 +327,33 @@ public class Common extends Application {
             for (Message m : list) {
                 addNewMessageToServer(m);
             }
+        }
+    }
+
+    private static void processMessage(Realm realm, JSONObject obj) throws JSONException, ParseException {
+        // Confirma recibido
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        JSONObject jsonConfirm = new JSONObject();
+        jsonConfirm.put("id_server", obj.getInt("id"));
+        jsonConfirm.put("fecha_recepcion", df.format(new Date()));
+        socket.emit("MESSAGE_CONFIRM_RECEPCION", jsonConfirm);
+
+        // Procesamos aviso
+        Date temp = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(obj.getString("date_created"));
+        Message m = Message.Static.getMessageConstuctor(realm, obj.getInt("id"), obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
+        int messageId = m.getID();
+        Log.e(TAGGER, "[MESSAGE_ID_CREATED]: " + messageId);
+
+        if (Common.isAppForeground()) {
+            Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
+            intent.putExtra("MESSAGE_ID", messageId);
+            intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
+            intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+            LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
+        } else {
+            // Aplicacion cerrada o en background
+            showNotification(obj.getString("from"), obj.getString("message"));
         }
     }
 
