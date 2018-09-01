@@ -12,6 +12,7 @@ import android.net.NetworkInfo;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.juan.chatproject.chat.Message;
 import com.juan.chatproject.chat.User;
@@ -84,23 +85,37 @@ public class Common extends Application {
                 @Override
                 public void call(Object... args) {
                     try {
+                        Realm realm = Realm.getDefaultInstance();
 
+                        JSONObject contactsJSON = new JSONObject();
+                        contactsJSON.put("id_user", getClientId());
+
+                        JSONArray ids = new JSONArray();
+                        List<String> listId = User.access.getIdCurrentContacts(realm);
+                        if (listId != null) {
+                            for(String id: listId) {
+                                ids.put(id);
+                            }
+                        }
+                        contactsJSON.put("ids", ids);
+
+                        socket.emit("LOGIN", contactsJSON);
+                        /*
+                        //requestAllChatsAvailable();
                         Log.e(TAGGER, "Reconectados");
                         JSONObject jsonLogin = new JSONObject();
-                        jsonLogin.put("socketID", socket.id());
-                        jsonLogin.put("clientID", getClientId());
-                        socket.emit("LOGIN", jsonLogin);
+//                        jsonLogin.put("socketID", socket.id());
+                        //socket.emit("LOGIN", jsonLogin);
 
-                        Realm realm = Realm.getDefaultInstance();
-                        sendAllMessagesPending(realm);
+
+                        //sendAllMessagesPending(realm);
+                        */
                         realm.close();
 
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
-
-                // NOT USED
             }).on("GET_USER_IS_TYPING", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
@@ -119,24 +134,95 @@ public class Common extends Application {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    // removed?
                 }
 
-            }).on("GET_ALL_CHATS_AVAILABLE", new Emitter.Listener() {
+            }).on("GET_LOGIN_RESPONSE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
+                    ArrayList<String> froms = new ArrayList<>();
 
-                    JSONArray array = (JSONArray) args[0];
-                    List<User> users = getUsersFromJSONArray(array);
-                    Realm realm = Realm.getDefaultInstance();
-                    LocalDataBase.access.updateUsers(realm, users);
+                    try(Realm realm = Realm.getDefaultInstance()) {
 
-                    if (Common.isAppForeground()) {
-                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
+                        List<User> users = realm.where(User.class).equalTo("available", true).findAll();
+                        Log.e(TAGGER, "[GET_LOGIN_RESPONSE][ANTES}: " + users.size());
+
+                        JSONObject response = (JSONObject) args[0];
+
+                        JSONObject contacts = response.getJSONObject("contacts");
+
+                        // Actualizar contactos
+                        final JSONArray contactsUpdate = contacts.getJSONArray("disable");
+                        final ArrayList<Integer> idsToDisable = new ArrayList<>();
+
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                try {
+                                    for(int i = 0; i < contactsUpdate.length(); i++) {
+                                        idsToDisable.add(contactsUpdate.getInt(i));
+
+                                        User u = realm.where(User.class).equalTo("id", contactsUpdate.getString(i)).findFirst();
+                                        if (u != null) {
+                                            u.setAvailable(false);
+                                            realm.copyToRealmOrUpdate(u);
+                                        }
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        });
+
+                        // Anadir contactos nuevos
+                        final JSONArray contactsAdd = contacts.getJSONArray("add");
+
+                        users = getUsersFromJSONArray(contactsAdd);
+                        LocalDataBase.access.updateUsers(realm, users);
+
+
+                        users = realm.where(User.class).equalTo("available", true).findAll();
+                        Log.e(TAGGER, "[GET_LOGIN_RESPONSE][ANTES]: " + users.size());
+
+                        // Procesamos mensajes
+                        final JSONArray newMessages = response.getJSONArray("messages");
+
+                        for (int i = 0; i < newMessages.length(); i++) {
+                            try {
+                                processMessage(realm, newMessages.getJSONObject(i));
+
+
+                                // Por cada uno generamis el evento
+                                String fromParsed = newMessages.getJSONObject(i).getString("from");
+                                if (!froms.contains(fromParsed)) {
+                                    froms.add(fromParsed);
+                                }
+
+                            } catch (JSONException | ParseException e){
+                                e.printStackTrace();
+                            }
+                        }
+
+                        sendAllMessagesPending(realm);
+
+                        if (Common.isAppForeground()) {
+                            // Actualiza las vistas de main
+                            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
+                        }
+
+                    } catch (JSONException exc) {
+                        Log.e(TAGGER, "Error: " + exc.getMessage());
                     }
-                    realm.close();
+
+                    try (Realm r = Realm.getDefaultInstance()) {
+                        for (String id : froms) {
+                            LocalDataBase.access.getLastMessageAsync(r, new ArrayList<User>(r.where(User.class).equalTo("id", id).findAll()));
+                        }
+                    }
+
                 }
 
+                // Preguntamos si tienen algun mensaje leido pendiente de enviar
             }).on("GET_PENDING_MESSAGES_READED", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
@@ -148,14 +234,13 @@ public class Common extends Application {
                     Realm realm = Realm.getDefaultInstance();
                     Integer[] idList = new Integer[array.length()];
                     try {
-                        for(int i = 0; i < array.length(); i++) {
+                        for (int i = 0; i < array.length(); i++) {
                             idList[i] = array.getJSONObject(i).getInt("id");
                         }
                     } catch (JSONException e) {
                         Log.e(TAGGER, "Error convirtiendo ids en int");
                     }
 
-//                    List<Message> messages = realm.where(Message.class).in("idServidor", idList).findAll();
                     List<Message> messages = realm.where(Message.class).in("idServidor", idList).and().isNotNull("fechaLectura").findAll();
 
                     for (Message m : messages) {
@@ -165,10 +250,24 @@ public class Common extends Application {
                     realm.close();
                 }
 
-            }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
+            }).on("GET_SEARCH_USERS_BY_NAME", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
 
+                    JSONArray array = (JSONArray) args[0];
+                    ArrayList<User> users = getUsersFromJSONArray(array);
+                    Realm realm = Realm.getDefaultInstance();
+                    //LocalDataBase.access.updateUsers(realm, users);
+                    Intent data = new Intent("SERCH_USERS_DATA");
+                    data.putExtra("users", users);
+                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(data));
+
+                    realm.close();
+                }
+
+            }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
                     try {
                         JSONObject obj = (JSONObject) args[0];
                         Realm realm = Realm.getDefaultInstance();
@@ -177,10 +276,10 @@ public class Common extends Application {
                         }
 
                         // Check if User exist in our database.
-                        // TODO: quizas se puede mejorar
+                        // TODO: quizas se puede mejorar.. Si te escriben un mensaje se entiende que se establece los contactos para los dos. Validar
                         User user = realm.where(User.class).equalTo("id", obj.getString("from")).findFirst();
                         if (user == null) {
-                            final User newUser = new User(obj.getString("from"), null, null, false, null, null, 0);
+                            final User newUser = new User(obj.getString("from"), null, null, false, null, null, false, false, true);
                             realm.executeTransaction(new Realm.Transaction() {
                                 @Override
                                 public void execute(Realm r) {
@@ -188,31 +287,10 @@ public class Common extends Application {
                                 }
                             });
                         }
-                        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        //
-                        JSONObject jsonConfirm = new JSONObject();
-                        jsonConfirm.put("id_server", obj.getInt("id"));
-                        jsonConfirm.put("fecha_recepcion", df.format(new Date()));
-                        socket.emit("MESSAGE_CONFIRM_RECEPCION", jsonConfirm);
-                        //
 
-                        Date temp = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(obj.getString("date_created"));
 
-                        Message m = Message.Static.getMessageConstuctor(realm, obj.getInt("id"), obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
-                        int messageId = m.getID();
-                        Log.e(TAGGER, "[MESSAGE_ID_CREATED]: " + messageId);
-
-                        if (Common.isAppForeground()) {
-                            Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
-                            intent.putExtra("MESSAGE_ID", messageId);
-                            intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
-                            intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
-                            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
-                            LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
-                        } else {
-                            // Aplicacion cerrada o en background
-                            showNotification(obj.getString("from"), obj.getString("message"));
-                        }
+                        processMessage(realm, obj);
+                        LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
 
                         realm.close();
 
@@ -261,6 +339,32 @@ public class Common extends Application {
         }
     }
 
+    private static void processMessage(Realm realm, JSONObject obj) throws JSONException, ParseException {
+        // Confirma recibido
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        JSONObject jsonConfirm = new JSONObject();
+        jsonConfirm.put("id_server", obj.getInt("id"));
+        jsonConfirm.put("fecha_recepcion", df.format(new Date()));
+        socket.emit("MESSAGE_CONFIRM_RECEPCION", jsonConfirm);
+
+        // Procesamos aviso
+        Date temp = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(obj.getString("date_created"));
+        Message m = Message.Static.getMessageConstuctor(realm, obj.getInt("id"), obj.getString("from"), obj.getString("to"), obj.getString("message"), temp, new Date());
+        int messageId = m.getID();
+        Log.e(TAGGER, "[MESSAGE_ID_CREATED]: " + messageId);
+
+        if (Common.isAppForeground()) {
+            Intent intent = new Intent("INTENT_GET_SINGLE_MESSAGE");
+            intent.putExtra("MESSAGE_ID", messageId);
+            intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
+            intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
+            LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+        } else {
+            // Aplicacion cerrada o en background
+            showNotification(obj.getString("from"), obj.getString("message"));
+        }
+    }
+
     private static boolean messageExist(Realm realm, int idServidor) {
         Message m = realm.where(Message.class).equalTo("idServidor", idServidor).findFirst();
         return m != null;
@@ -292,9 +396,11 @@ public class Common extends Application {
 
     public static void requestAllChatsAvailable() {
 
-        if (socket == null || !Common.isAppForeground())
+        if (socket == null || !socket.connected() || !Common.isOnline() || mContext == null){
+//        if (socket == null || !Common.isAppForeground() || !socket.connected() || !Common.isOnline() || mContext == null){
+            //Toast.makeText(mContext, mContext.getString(R.string.network_error), Toast.LENGTH_SHORT).show();
             return;
-
+        }
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("FROM", getClientId());
@@ -428,7 +534,9 @@ public class Common extends Application {
                         object.getInt("online") == 1,
                         date,
                         null,
-                        object.getInt("banned")
+                        object.getInt("banned") == 1,
+                        object.isNull("pending"),
+                        true
                 );
                 users.add(u);
 
@@ -439,6 +547,19 @@ public class Common extends Application {
         }
 
         return users;
+    }
+
+    public static void searchUsersByName(String name) {
+        if (Common.isOnline() && socket.connected()) {
+            JSONObject json = new JSONObject();
+            try {
+                json.put("user_from", Common.getClientId());
+                json.put("name", name);
+                socket.emit("SEARCH_USERS_BY_NAME", json);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static boolean isOnline() {

@@ -12,13 +12,10 @@ import android.widget.TextView
 import com.juan.chatproject.chat.User
 import com.squareup.picasso.Picasso
 import com.thetechnocafe.gurleensethi.liteutils.RecyclerAdapterUtil
-import com.thetechnocafe.gurleensethi.liteutils.longToast
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.activity_main.*
-import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import com.juan.chatproject.chat.Message
 import io.realm.Realm
 import io.realm.annotations.Ignore
 import android.content.IntentFilter
@@ -58,7 +55,8 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
                 }
             }
         }
-        loadChatContacts()
+        setupAdapter()
+        loadContacts()
     }
 
     val getNewMessage = object : BroadcastReceiver() {
@@ -86,18 +84,21 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         }
         val position = allUsers.indexOf(allUsers.filter { p -> p.id == clientID }.first())
         rv.findViewHolderForAdapterPosition(position).let { rv ->
-            val tvDescription = rv.itemView.findViewById<TextView>(R.id.tvDescription)
-            val tvCounter = rv.itemView.findViewById<TextView>(R.id.tvNumber)
-            tvDescription.text = message
 
-            if (counter > 0) {
-                rv.itemView.setBackgroundColor(Color.parseColor(getColorByNumberMessages(counter)))
-                tvCounter.text = if (counter > 3) "*" else "$counter"
-                tvCounter.visibility = View.VISIBLE
-            } else {
-                rv.itemView.setBackgroundColor(Color.parseColor("#dddddd"))
-                tvCounter.text = ""
-                tvCounter.visibility = View.GONE
+            rv?.let {
+                val tvDescription = rv.itemView.findViewById<TextView>(R.id.tvDescription)
+                val tvCounter = rv.itemView.findViewById<TextView>(R.id.tvNumber)
+                tvDescription.text = message
+
+                if (counter > 0) {
+                    rv.itemView.setBackgroundColor(Color.parseColor(getColorByNumberMessages(counter)))
+                    tvCounter.text = if (counter > 3) "*" else "$counter"
+                    tvCounter.visibility = View.VISIBLE
+                } else {
+                    rv.itemView.setBackgroundColor(Color.parseColor("#dddddd"))
+                    tvCounter.text = ""
+                    tvCounter.visibility = View.GONE
+                }
             }
         }
     }
@@ -114,15 +115,19 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
 
     val getUsers = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            realm?.let {
-                val data = LocalDataBase.access.getAllUsers(it) as ArrayList<User>
-                allUsers.clear()
-                allUsers.addAll(data)
-                adapter?.notifyDataSetChanged()
-            }
+            loadContacts()
         }
     }
 
+
+    fun loadContacts() {
+        realm?.let {
+            val data = LocalDataBase.getAllUsers(it) as ArrayList<User>
+            allUsers.clear()
+            allUsers.addAll(data)
+            adapter?.notifyDataSetChanged()
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -133,13 +138,13 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
 
         val realm = Realm.getDefaultInstance()
         // De momento, solo recargaremos los chats que hayan sufrido cambios en la mensajeria. No todos.
-        val i = 0
 
-        val chats = LocalDataBase.access.getLastMessage(realm, realm.where(User::class.java).equalTo("banned", i).notEqualTo("id", Common.getClientId()).findAll())
+        val chats = LocalDataBase.getLastMessage(realm, realm.where(User::class.java).equalTo("banned", false).notEqualTo("id", Common.getClientId()).findAll())
 
         Log.e(TAGGER, "Mesajes nuevos total: " + chats)
 
 
+        // Se podria prescindir?
         if (chats.count() > 0) {
             for (chat in chats) {
                 markChatMessage(chat.key, chat.value[0], chat.value[1].toInt())
@@ -149,7 +154,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         realm.close()
     }
 
-    fun loadChatContacts() {
+    fun setupAdapter() {
 
         adapter = RecyclerAdapterUtil.Builder(this, allUsers, R.layout.row_user_chat)
                 .viewsList(R.id.tvName, R.id.ivPic)
@@ -209,9 +214,14 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         return when (item?.itemId) {
             R.id.itReload -> {
-                Common.requestAllChatsAvailable()
+//                Common.requestAllChatsAvailable()
                 true
             }
+            R.id.itSearch -> {
+                startActivity(Intent(this@MainActivity, ContactosList::class.java))
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
         }
     }

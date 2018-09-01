@@ -1,6 +1,7 @@
 package com.juan.chatproject
 
 import android.content.Intent
+import android.icu.lang.UScript
 import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import com.juan.chatproject.chat.Message
@@ -8,6 +9,7 @@ import com.juan.chatproject.chat.User
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
+import io.realm.kotlin.delete
 import org.xml.sax.SAXParseException
 import java.util.*
 import java.util.logging.Handler
@@ -38,14 +40,19 @@ class LocalDataBase {
         fun updateUsers(realm: Realm, list: List<User>) {
             realm.executeTransaction {
                 for (item in list) {
+//                    it.insert(item)
                     it.copyToRealmOrUpdate(item)
                 }
             }
+
+            val data = realm.where(User::class.java).findAll()
+            print("data: $data")
         }
 
         fun getAllUsers(realm: Realm, exceptUser: String = Common.getClientId()): List<User> {
-            var ent = 0
-            return ArrayList(realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", ent).findAll())
+
+
+            return ArrayList(realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", false).and().equalTo("available", true).findAll())
         }
 
         fun saveMessage(realm: Realm, message: Message): Int {
@@ -95,7 +102,7 @@ class LocalDataBase {
                                 break
                         }
 
-                        Log.e(TAGGER,"Total mensajes sin leer: " + totalMensajesNoLeidos)
+                        Log.e(TAGGER, "Total mensajes sin leer: " + totalMensajesNoLeidos)
 
                         lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, totalMensajesNoLeidos.toString())
                     } else {
@@ -139,7 +146,7 @@ class LocalDataBase {
                             }
                         }
 
-                        Log.e(TAGGER,"Total mensajes sin leer: " + totalMensajesNoLeidos)
+                        Log.e(TAGGER, "Total mensajes sin leer: " + totalMensajesNoLeidos)
 
                         lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, totalMensajesNoLeidos.toString())
                     } else {
@@ -158,7 +165,7 @@ class LocalDataBase {
         fun updateMessageAsSent(realm: Realm, idPda: Int, idServer: Int) {
             val m = realm.where(Message::class.java).equalTo("id", idPda).findFirst()
 
-            realm.executeTransaction {r ->
+            realm.executeTransaction { r ->
                 m?.let {
                     m.setIdServidor(idServer)
                     r.insertOrUpdate(m)

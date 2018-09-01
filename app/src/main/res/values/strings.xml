@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ChatProject</string>
+
+    <string name="informacion">Información</string>
+    <string name="enviar_solicitud">Enviar solicitud</string>
+    <string name="network_error">Error de conexión</string>
 </resources>

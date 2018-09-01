@@ -29,7 +29,8 @@ class LoginActivity : AppCompatActivity() {
 
                 val realm = Realm.getDefaultInstance()
                 realm.executeTransaction {
-                    it.copyToRealm(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, 0))
+                    it.insert(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false, false))
+//                    it.copyToRealm(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false))
                 }
                 realm.close()
 
