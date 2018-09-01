@@ -31,7 +31,6 @@ class ContactosList : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_contactos_list)
         rvList.layoutManager = LinearLayoutManager(this@ContactosList, LinearLayoutManager.VERTICAL, false)
-//        loadChatContacts()
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
             }

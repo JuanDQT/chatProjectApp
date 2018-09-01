@@ -12,13 +12,10 @@ import android.widget.TextView
 import com.juan.chatproject.chat.User
 import com.squareup.picasso.Picasso
 import com.thetechnocafe.gurleensethi.liteutils.RecyclerAdapterUtil
-import com.thetechnocafe.gurleensethi.liteutils.longToast
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.activity_main.*
-import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import com.juan.chatproject.chat.Message
 import io.realm.Realm
 import io.realm.annotations.Ignore
 import android.content.IntentFilter
@@ -58,8 +55,8 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
                 }
             }
         }
-        loadChatContacts()
-
+        setupAdapter()
+        loadContacts()
     }
 
     val getNewMessage = object : BroadcastReceiver() {
@@ -118,15 +115,19 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
 
     val getUsers = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            realm?.let {
-                val data = LocalDataBase.getAllUsers(it) as ArrayList<User>
-                allUsers.clear()
-                allUsers.addAll(data)
-                adapter?.notifyDataSetChanged()
-            }
+            loadContacts()
         }
     }
 
+
+    fun loadContacts() {
+        realm?.let {
+            val data = LocalDataBase.getAllUsers(it) as ArrayList<User>
+            allUsers.clear()
+            allUsers.addAll(data)
+            adapter?.notifyDataSetChanged()
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -143,6 +144,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         Log.e(TAGGER, "Mesajes nuevos total: " + chats)
 
 
+        // Se podria prescindir?
         if (chats.count() > 0) {
             for (chat in chats) {
                 markChatMessage(chat.key, chat.value[0], chat.value[1].toInt())
@@ -152,7 +154,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         realm.close()
     }
 
-    fun loadChatContacts() {
+    fun setupAdapter() {
 
         adapter = RecyclerAdapterUtil.Builder(this, allUsers, R.layout.row_user_chat)
                 .viewsList(R.id.tvName, R.id.ivPic)

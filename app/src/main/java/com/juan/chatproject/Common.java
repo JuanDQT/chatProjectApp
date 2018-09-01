@@ -139,6 +139,7 @@ public class Common extends Application {
             }).on("GET_LOGIN_RESPONSE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
+                    ArrayList<String> froms = new ArrayList<>();
 
                     try(Realm realm = Realm.getDefaultInstance()) {
 
@@ -189,16 +190,22 @@ public class Common extends Application {
                         for (int i = 0; i < newMessages.length(); i++) {
                             try {
                                 processMessage(realm, newMessages.getJSONObject(i));
+
+
+                                // Por cada uno generamis el evento
+                                String fromParsed = newMessages.getJSONObject(i).getString("from");
+                                if (!froms.contains(fromParsed)) {
+                                    froms.add(fromParsed);
+                                }
+
                             } catch (JSONException | ParseException e){
                                 e.printStackTrace();
                             }
                         }
 
-
-
-
                         sendAllMessagesPending(realm);
-                        realm.close();
+
+
                         // Actualizar mensajes. Remove ?
 
 
@@ -209,6 +216,14 @@ public class Common extends Application {
 
                     } catch (JSONException exc) {
                         Log.e(TAGGER, "Error: " + exc.getMessage());
+                    }
+
+                    try (Realm r = Realm.getDefaultInstance()) {
+                        for (String id : froms) {
+                            LocalDataBase.access.getLastMessageAsync(r, new ArrayList<User>(r.where(User.class).equalTo("id", id).findAll()));
+                        }
+                    } catch (Exception exc) {
+
                     }
 
                 }
@@ -282,6 +297,7 @@ public class Common extends Application {
 
 
                         processMessage(realm, obj);
+                        LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
 
                         realm.close();
 
@@ -350,7 +366,6 @@ public class Common extends Application {
             intent.putExtra("MESSAGE_TEXT", obj.getString("message"));
             intent.putExtra("MESSAGE_CLIENT_ID", obj.getString("from"));
             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
-            LocalDataBase.access.getLastMessageAsync(realm, new ArrayList<User>(realm.where(User.class).equalTo("id", obj.getString("from")).findAll()));
         } else {
             // Aplicacion cerrada o en background
             showNotification(obj.getString("from"), obj.getString("message"));
