@@ -205,10 +205,6 @@ public class Common extends Application {
 
                         sendAllMessagesPending(realm);
 
-
-                        // Actualizar mensajes. Remove ?
-
-
                         if (Common.isAppForeground()) {
                             // Actualiza las vistas de main
                             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent("MAIN_ACTIVITY_GET_CONTACTS"));
@@ -222,8 +218,6 @@ public class Common extends Application {
                         for (String id : froms) {
                             LocalDataBase.access.getLastMessageAsync(r, new ArrayList<User>(r.where(User.class).equalTo("id", id).findAll()));
                         }
-                    } catch (Exception exc) {
-
                     }
 
                 }
@@ -274,7 +268,6 @@ public class Common extends Application {
             }).on("GET_SINGLE_MESSAGE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    // TODO: No recibe los mensajes cuando te acabas de instalar la aff y iniciar sesion offline, y despues actovar wifi. Solucion: primero sincronziar contactos despues m,emnsajes
                     try {
                         JSONObject obj = (JSONObject) args[0];
                         Realm realm = Realm.getDefaultInstance();
