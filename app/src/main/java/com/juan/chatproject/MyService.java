@@ -7,7 +7,7 @@ import android.support.annotation.Nullable;
 import java.util.Timer;
 import java.util.TimerTask;
 
-class MyService extends Service {
+public class MyService extends Service {
 
     @Nullable
     @Override

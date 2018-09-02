@@ -1,19 +1,18 @@
 package com.juan.chatproject
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.support.v7.app.AppCompatActivity
+
+import android.content.*
+import android.graphics.Color
 import android.os.Bundle
+import android.support.v4.app.Fragment
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.app.AlertDialog
 import android.support.v7.widget.LinearLayoutManager
-import android.text.Editable
-import android.text.TextWatcher
+import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import com.juan.chatproject.chat.User
@@ -22,79 +21,91 @@ import com.thetechnocafe.gurleensethi.liteutils.RecyclerAdapterUtil
 import com.thetechnocafe.gurleensethi.liteutils.shortToast
 import de.hdodenhof.circleimageview.CircleImageView
 import io.realm.Realm
-import kotlinx.android.synthetic.main.activity_contactos_list.*
 
-class ContactosList : AppCompatActivity() {
+class ContactosFragment : Fragment() {
 
     var allUsers: ArrayList<User> = arrayListOf()
     var adapter: RecyclerAdapterUtil<User>? = null
     var tipoActivity: String? = null
+    var dialog: AlertDialog? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_contactos_list)
+    var mList: RecyclerView? = null
 
-        rvList.layoutManager = LinearLayoutManager(this@ContactosList, LinearLayoutManager.VERTICAL, false)
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-            }
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
+                              savedInstanceState: Bundle?): View? {
 
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
+        val view = inflater?.inflate(R.layout.fragment_contactos,
+                container, false)
 
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                s?.let {
-                    if (it.count() > 0) {
-                        Common.searchUsersByName(s.toString())
-                    } else {
-                        allUsers.clear()
-                        adapter?.notifyDataSetChanged()
-                    }
-                }
-            }
-        })
+        mList = view?.findViewById<RecyclerView>(R.id.rvContactos)
+
+        mList?.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+
+
         setUpContactsAdapter()
 
-/*        intent?.let {
-            tipoActivity = it.getStringExtra(MainActivity().TIPO_ACTIVITY)
+        if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_PENDIENTES) {
 
-            if (tipoActivity == "LOCAL") {
-                title = "Solicitudes"
-                etSearch.visibility = View.GONE
-                loadRequestContactSent()
-            } else {
-            }
+            tipoActivity = ContactosActivity().TIPO_PENDIENTES
+            val sp: SharedPreferences = context.getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+            val data = sp.getStringSet(Common.IDS_REQUEST_CONTACT_RECEIVED, hashSetOf())
+            context.shortToast("IDS Entrantes: " + data.size)
+            Common.searchUsersById(ArrayList(data))
+            Log.e(Common.TAGGER, "Cargamos Enviadas")
+            LocalBroadcastManager.getInstance(context).registerReceiver(getContacts, IntentFilter("SERCH_USERS_DATA"))
+        } else {
+            //view?.setBackgroundColor(Color.RED)
+            tipoActivity = ContactosActivity().TIPO_ENVIADAS
+            loadRequestContactSent()
+            Log.e(Common.TAGGER, "Cargamos Pendientes")
 
-        }*/
-        LocalBroadcastManager.getInstance(this@ContactosList).registerReceiver(getContacts, IntentFilter("SERCH_USERS_DATA"))
+        }
 
+
+        // Boradcaster listener... De si alguien te acepto en la misma pantallla...
+
+        // TODO: validar funcionamiento, recibir peticion, cambiar alertdialog, validar bbdd, que passa si es offline, etc.
+
+        return view
     }
 
-    fun loadLocalContacts() {
+    private val getContacts = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+
+            tipoActivity?.let {
+
+                if (it == ContactosActivity().TIPO_ENVIADAS)
+                return
+
+
+                intent?.let {
+                    val list: ArrayList<User> = it.getSerializableExtra("users") as ArrayList<User>
+                    allUsers.clear()
+                    allUsers.addAll(list)
+                    Log.e(Common.TAGGER, "Te actualizamos data: " + list.size)
+
+                    adapter?.notifyDataSetChanged()
+                }
+
+            }
+
+        }
+    }
+
+
+    fun loadRequestContactSent() {
         Realm.getDefaultInstance().use { r ->
 
             allUsers.clear()
             allUsers.addAll(r.copyFromRealm(r.where(User::class.java).notEqualTo("id", Common.getClientId()).and().equalTo("pending", true).findAll()))
-//                    allUsers.addAll(r.where(User::class.java).notEqualTo("id", Common.getClientId()).and().equalTo("pending", true).findAll())
             adapter?.notifyDataSetChanged()
         }
 
     }
 
-    private val getContacts = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            intent?.let {
-                val list: ArrayList<User> = it.getSerializableExtra("users") as ArrayList<User>
-                allUsers.clear()
-                allUsers.addAll(list)
-                adapter?.notifyDataSetChanged()
-            }
-        }
-    }
-
     fun setUpContactsAdapter() {
 
-        adapter = RecyclerAdapterUtil.Builder(this, allUsers, R.layout.row_contacto)
+        adapter = RecyclerAdapterUtil.Builder(context, allUsers, R.layout.row_contacto)
                 .viewsList(R.id.rowName, R.id.rowPic)
                 .bindView { itemView, item, position, innerViews ->
                     val textView = innerViews[R.id.rowName] as TextView
@@ -102,14 +113,14 @@ class ContactosList : AppCompatActivity() {
                     textView.text = allUsers[position].name
                     allUsers[position].avatar?.let {
                         if (it.isNotEmpty())
-                            Picasso.with(this@ContactosList).load(it).into(imageView)
+                            Picasso.with(context).load(it).into(imageView)
                     }
 
                 }
                 .addClickListener { item, position ->
-                    val builder = AlertDialog.Builder(this@ContactosList)
+                    val builder = AlertDialog.Builder(context)
                     builder.setTitle(getString(R.string.informacion))
-                    val view = LayoutInflater.from(this@ContactosList).inflate(R.layout.ad_contacto, null)
+                    val view = LayoutInflater.from(context).inflate(R.layout.ad_contacto, null)
                     val tvName = view.findViewById<TextView>(R.id.tvName)
                     val btnAction = view.findViewById<Button>(R.id.btnAction)
                     val civPic = view.findViewById<CircleImageView>(R.id.civPic)
@@ -127,10 +138,9 @@ class ContactosList : AppCompatActivity() {
                             action = if (condition) "U" else "R"
                         }
                     }
-                    Picasso.with(this@ContactosList).load(allUsers[position].avatar).into(civPic)
+                    Picasso.with(context).load(allUsers[position].avatar).into(civPic)
 
                     btnAction.setOnClickListener {
-                        shortToast("Accion: $action")
 
                         if (Common.setContactoStatus(allUsers[position].id, action)) {
 
@@ -163,20 +173,22 @@ class ContactosList : AppCompatActivity() {
                         }
 
                         if (tipoActivity == "LOCAL") {
-                            loadLocalContacts()
-                            onBackPressed()
+                            loadRequestContactSent()
+                            dialog?.dismiss()
                         }
                     }
 
 //
                     builder.setView(view)
-                    builder.show()
+
+                    dialog = builder.create()
+                    dialog?.show()
 
                 }
                 .addLongClickListener { item, position ->
                     //Take action when item is long pressed
                 }.build()
-        rvList.adapter = adapter
+        mList?.adapter = adapter
 
     }
 

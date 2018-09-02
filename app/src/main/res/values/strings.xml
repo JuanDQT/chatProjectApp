@@ -6,4 +6,7 @@
     <string name="solicitud_enviada">Solicitud ya enviada</string>
     <string name="eliminar_contacto">Eliminar contacto</string>
     <string name="network_error">Error de conexión</string>
+    <string name="solicitudes_pendientes">Pendientes</string>
+    <string name="solicitudes_enviadas">Enviadas</string>
+    <string name="solicitudes">Solicitudes</string>
 </resources>

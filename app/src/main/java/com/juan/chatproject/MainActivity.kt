@@ -20,7 +20,7 @@ import io.realm.Realm
 import io.realm.annotations.Ignore
 import android.content.IntentFilter
 
-class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateReceiverListener {
+class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateReceiverListener, View.OnClickListener {
 
     val TAGGER = "TAGGER"
     var allUsers: ArrayList<User> = arrayListOf()
@@ -57,6 +57,9 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         }
         setupAdapter()
         loadContacts()
+
+        ibSearch.setOnClickListener(this)
+        ibContacts.setOnClickListener(this)
     }
 
     val getNewMessage = object : BroadcastReceiver() {
@@ -205,20 +208,13 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         Log.d(TAGGER, "Se ha perdido la conexion a la red")
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        val inflater = menuInflater
-        inflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        return when (item?.itemId) {
-            R.id.itSearch -> {
-                startActivity(Intent(this@MainActivity, ContactosList::class.java))
-                true
+    override fun onClick(v: View?) {
+        var intent = Intent(this@MainActivity, ContactosActivity::class.java)
+        when (v?.id) {
+            R.id.ibSearch -> {
+                intent = Intent(this@MainActivity, ContactosList::class.java)
             }
-
-            else -> super.onOptionsItemSelected(item)
         }
+        startActivity(intent)
     }
 }

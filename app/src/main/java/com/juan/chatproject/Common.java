@@ -34,9 +34,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -56,6 +58,7 @@ public class Common extends Application {
 
     private static Socket socket;
     private static SharedPreferences sharedPreferences;
+    public static String IDS_REQUEST_CONTACT_RECEIVED = "IDS_REQUEST_CONTACT_RECEIVED";
 
     @Override
     public void onCreate() {
@@ -93,7 +96,7 @@ public class Common extends Application {
                         JSONArray ids = new JSONArray();
                         List<String> listId = User.access.getIdCurrentContacts(realm);
                         if (listId != null) {
-                            for(String id: listId) {
+                            for (String id : listId) {
                                 ids.put(id);
                             }
                         }
@@ -135,12 +138,31 @@ public class Common extends Application {
                     }
                 }
 
+            }).on("GET_ASK_REQUEST_CONTACT", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+
+                    // TODO: Escucha si alguien te confirmo/nego el anadir contacto
+                    try {
+
+                        JSONObject obj = (JSONObject) args[0];
+
+                        // Guardamos las solicitudes entrantes en sharedPreferences...
+                        addNewRequestContact(obj.getString("id_user_from"));
+                        //
+
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
             }).on("GET_LOGIN_RESPONSE", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
                     ArrayList<String> froms = new ArrayList<>();
 
-                    try(Realm realm = Realm.getDefaultInstance()) {
+                    try (Realm realm = Realm.getDefaultInstance()) {
 
                         List<User> users = realm.where(User.class).equalTo("available", true).findAll();
                         Log.e(TAGGER, "[GET_LOGIN_RESPONSE][ANTES}: " + users.size());
@@ -157,7 +179,7 @@ public class Common extends Application {
                             @Override
                             public void execute(Realm realm) {
                                 try {
-                                    for(int i = 0; i < contactsUpdate.length(); i++) {
+                                    for (int i = 0; i < contactsUpdate.length(); i++) {
                                         idsToDisable.add(contactsUpdate.getInt(i));
 
                                         User u = realm.where(User.class).equalTo("id", contactsUpdate.getString(i)).findFirst();
@@ -197,7 +219,7 @@ public class Common extends Application {
                                     froms.add(fromParsed);
                                 }
 
-                            } catch (JSONException | ParseException e){
+                            } catch (JSONException | ParseException e) {
                                 e.printStackTrace();
                             }
                         }
@@ -519,7 +541,7 @@ public class Common extends Application {
                         date,
                         null,
                         object.getInt("banned") == 1,
-                        object.isNull("pending")? null: object.getInt("pending") == 1, // --> Pendiende. NULL = nada, true =
+                        object.isNull("pending") ? null : object.getInt("pending") == 1, // --> Pendiende. NULL = nada, true =
                         true
                 );
                 users.add(u);
@@ -546,6 +568,28 @@ public class Common extends Application {
         }
     }
 
+    public static void searchUsersById(ArrayList<String> ids) {
+        if (ids.isEmpty())
+            return;
+        if (Common.isOnline() && socket.connected()) {
+            try {
+
+                JSONObject json = new JSONObject();
+                JSONArray idsJSON = new JSONArray();
+
+                for (String id : ids) {
+                    idsJSON.put(id);
+                }
+                json.put("ids", idsJSON);
+                socket.emit("SEARCH_USERS_BY_ID", json);
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
     public static boolean setContactoStatus(String idUserTo, String action) {
         if (Common.isOnline() && socket.connected()) {
             JSONObject json = new JSONObject();
@@ -568,4 +612,20 @@ public class Common extends Application {
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         return netInfo != null && netInfo.isConnectedOrConnecting();
     }
+
+    private static void addNewRequestContact(String id) {
+
+        if (sharedPreferences != null) {
+
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+
+            Set<String> data = sharedPreferences.getStringSet(IDS_REQUEST_CONTACT_RECEIVED, new HashSet<String>());
+            data.add(id);
+
+            editor.putStringSet(IDS_REQUEST_CONTACT_RECEIVED, data);
+
+            editor.apply();
+        }
+    }
+
 }

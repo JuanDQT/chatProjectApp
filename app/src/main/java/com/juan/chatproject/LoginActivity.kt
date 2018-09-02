@@ -22,17 +22,15 @@ class LoginActivity : AppCompatActivity() {
             startActivity(Intent(this@LoginActivity, MainActivity::class.java))
         }
 
-        btnLogin.setOnClickListener {
+        btnLogin.setOnClickListener { v ->
             if (!etLogin.text.toString().isEmpty() && numbersAvailable.containsKey(etLogin.text.toString())) {
 
                 sharedPreferences.edit().putString("FROM", numbersAvailable.getValue(etLogin.text.toString())).apply()
 
-                val realm = Realm.getDefaultInstance()
-                realm.executeTransaction {
-                    it.insert(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false, false))
+                Realm.getDefaultInstance().executeTransaction {
+                    it.insertOrUpdate(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false, false))
 //                    it.copyToRealm(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false))
                 }
-                realm.close()
 
                 val intent = Intent(this@LoginActivity, MainActivity::class.java)
                 startActivity(intent)
