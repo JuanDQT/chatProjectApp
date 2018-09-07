@@ -9,4 +9,10 @@
     <string name="solicitudes_pendientes">Pendientes</string>
     <string name="solicitudes_enviadas">Enviadas</string>
     <string name="solicitudes">Solicitudes</string>
+
+    <string name="escribe_un_mensaje">Escribe un mensaje</string>
+
+    <string name="escribir_nombre_contato">Indique el nombre del contacto</string>
+
+    <string name="login">Login</string>
 </resources>

@@ -40,7 +40,6 @@ class LocalDataBase {
         fun updateUsers(realm: Realm, list: List<User>) {
             realm.executeTransaction {
                 for (item in list) {
-//                    it.insert(item)
                     it.copyToRealmOrUpdate(item)
                 }
             }

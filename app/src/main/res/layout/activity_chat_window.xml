@@ -51,13 +51,13 @@
 
 
     <com.stfalcon.chatkit.messages.MessageInput
-        android:background="#ddd"
         android:id="@+id/input"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:background="#ddd"
         app:inputButtonIcon="@drawable/ic_send"
-        app:inputHintColor="#484444"
-        app:inputHint="Escribe un mensaje"/>
+        app:inputHint="@string/escribe_un_mensaje"
+        app:inputHintColor="#484444" />
 
 </RelativeLayout>

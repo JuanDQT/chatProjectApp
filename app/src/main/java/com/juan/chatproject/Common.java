@@ -50,7 +50,6 @@ public class Common extends Application {
     public static final String SHARED_PREFERENCES_ACTIVITY_IN_MAIN = "MAIN_ACTIVE";
     public static final String TAGGER = "TAGGER";
     private static final String IP = "http://192.168.1.116:3000"; // 192.168.44.122
-    private static final String ID_DEVICE = "Moto";
 
     private static Context mContext;
 
