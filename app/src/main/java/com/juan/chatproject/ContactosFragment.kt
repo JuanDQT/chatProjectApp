@@ -31,14 +31,11 @@ class ContactosFragment : Fragment() {
 
     var mList: RecyclerView? = null
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
 
-        val view = inflater?.inflate(R.layout.fragment_contactos,
-                container, false)
+        val view = inflater?.inflate(R.layout.fragment_contactos, container, false)
 
         mList = view?.findViewById<RecyclerView>(R.id.rvContactos)
-
         mList?.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
 
 
@@ -51,14 +48,12 @@ class ContactosFragment : Fragment() {
             val data = sp.getStringSet(Common.IDS_REQUEST_CONTACT_RECEIVED, hashSetOf())
             context.shortToast("IDS Entrantes: " + data.size)
             Common.searchUsersById(ArrayList(data))
-            Log.e(Common.TAGGER, "Cargamos Enviadas")
+            Log.e(Common.TAGGER, "Cargamos Pendientes: ")
             LocalBroadcastManager.getInstance(context).registerReceiver(getContacts, IntentFilter("SERCH_USERS_DATA"))
         } else {
-            //view?.setBackgroundColor(Color.RED)
             tipoActivity = ContactosActivity().TIPO_ENVIADAS
             loadRequestContactSent()
-            Log.e(Common.TAGGER, "Cargamos Pendientes")
-
+            Log.e(Common.TAGGER, "Cargamos Enviadas: ${allUsers.count()}")
         }
 
 
@@ -69,16 +64,16 @@ class ContactosFragment : Fragment() {
         return view
     }
 
+    // OBSERVER - CONTACTS
     private val getContacts = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
-            tipoActivity?.let {
+            tipoActivity?.let { tipo ->
 
-                if (it == ContactosActivity().TIPO_ENVIADAS)
-                return
+                if (tipo == ContactosActivity().TIPO_ENVIADAS)
+                    return
 
-
-                intent?.let {
+                intent?.let { it ->
                     val list: ArrayList<User> = it.getSerializableExtra("users") as ArrayList<User>
                     allUsers.clear()
                     allUsers.addAll(list)
@@ -86,16 +81,13 @@ class ContactosFragment : Fragment() {
 
                     adapter?.notifyDataSetChanged()
                 }
-
             }
-
         }
     }
 
 
     fun loadRequestContactSent() {
         Realm.getDefaultInstance().use { r ->
-
             allUsers.clear()
             allUsers.addAll(r.copyFromRealm(r.where(User::class.java).notEqualTo("id", Common.getClientId()).and().equalTo("pending", true).findAll()))
             adapter?.notifyDataSetChanged()
@@ -123,62 +115,84 @@ class ContactosFragment : Fragment() {
                     val view = LayoutInflater.from(context).inflate(R.layout.ad_contacto, null)
                     val tvName = view.findViewById<TextView>(R.id.tvName)
                     val btnAction = view.findViewById<Button>(R.id.btnAction)
+                    val btnActionDeny = view.findViewById<Button>(R.id.btnActionDeny)
                     val civPic = view.findViewById<CircleImageView>(R.id.civPic)
                     tvName.text = allUsers[position].name
-                    var action = "A" // A --> Add, R --> Remove contact, U --> Remove linea solicitud. Por defecti es A
+                    var action = "" // U = cancelar solicitud enviada,
 
-
-                    if (allUsers[position].pending == null) {
-                        btnAction.text = getString(R.string.enviar_solicitud)
-//                        action = "A"
-                    } else {
-                        allUsers[position].pending?.let { condition ->
-                            btnAction.text = if (condition) getString(R.string.solicitud_enviada) else getString(R.string.eliminar_contacto)
-
-                            action = if (condition) "U" else "R"
-                        }
-                    }
                     Picasso.with(context).load(allUsers[position].avatar).into(civPic)
 
-                    btnAction.setOnClickListener {
+                    if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_PENDIENTES) {
+                        btnAction.text = getString(R.string.no_aceptar)
 
-                        if (Common.setContactoStatus(allUsers[position].id, action)) {
+                        btnAction.setOnClickListener {
 
-                            var valorContacto: Boolean? = null
-                            when (action) {
-                                "A" -> {
-                                    btnAction.text = getString(R.string.solicitud_enviada)
-                                    valorContacto = true
-                                    action = "U"
-                                }
-                                "R", "U" -> {
-                                    btnAction.text = getString(R.string.enviar_solicitud)
-                                    valorContacto = null
-                                    action = "A"
-
-                                }
-
-                            }
-                            // TODO: VALIDAR...
-
-                            allUsers[position].pending = valorContacto
-                            Realm.getDefaultInstance().executeTransaction { r ->
-                                if (action == "U") {
+                            if (Common.setContactoStatus(allUsers[position].id, Common.ACEPTAR_CONTACTO)) {
+                                allUsers[position].pending = false
+                                Realm.getDefaultInstance().executeTransaction { r ->
                                     r.insertOrUpdate(allUsers[position])
                                     Log.e(Common.TAGGER, "Contacto anadido")
-                                } else {
-                                    r.where(User::class.java).equalTo("id", allUsers[position].id).findFirst()?.deleteFromRealm()
                                 }
                             }
                         }
 
-                        if (tipoActivity == "LOCAL") {
-                            loadRequestContactSent()
-                            dialog?.dismiss()
+                        // delete form local set
+                        // delete linea bbdd remota
+
+                        btnActionDeny.visibility = View.VISIBLE
+                        btnAction.setOnClickListener {
+
+                            if (Common.setContactoStatus(allUsers[position].id, Common.DENEGAR_CONTACTO)) {
+                                val sp: SharedPreferences = context.getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
+                                val data = sp.getStringSet(Common.IDS_REQUEST_CONTACT_RECEIVED, hashSetOf())
+                                Common.searchUsersById(ArrayList(data))
+                                dialog?.dismiss()
+                            }
+                        }
+
+                    } else {
+
+                        btnAction.setOnClickListener {
+
+                            if (Common.setContactoStatus(allUsers[position].id, Common.CANCELAR_CONTACTO)) {
+                                var valorContacto: Boolean? = null
+                                when (action) {
+                                    Common.SOLICITAR_CONTACTO -> {
+                                        valorContacto = true
+                                    }
+                                    "U" -> {
+                                        valorContacto = null
+                                    }
+
+                                }
+                                // TODO: VALIDAR...
+
+                                allUsers[position].pending = valorContacto
+                                Realm.getDefaultInstance().executeTransaction { r ->
+                                    if (action == Common.SOLICITAR_CONTACTO) {
+                                        r.insertOrUpdate(allUsers[position])
+                                        Log.e(Common.TAGGER, "Contacto anadido")
+                                    } else {
+                                        r.where(User::class.java).equalTo("id", allUsers[position].id).findFirst()?.deleteFromRealm()
+                                    }
+                                }
+                            }
+
+                            if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_ENVIADAS) {
+                                loadRequestContactSent()
+                                dialog?.dismiss()
+                            }
+                        }
+
+
+                        allUsers[position].pending?.let { condition ->
+                            btnAction.text = getString(R.string.cancelar_solicitud)
+                            action = Common.CANCELAR_CONTACTO
                         }
                     }
 
-//
+
+
                     builder.setView(view)
 
                     dialog = builder.create()
@@ -189,7 +203,6 @@ class ContactosFragment : Fragment() {
                     //Take action when item is long pressed
                 }.build()
         mList?.adapter = adapter
-
     }
 
 }

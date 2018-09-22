@@ -13,6 +13,8 @@
     <string name="escribe_un_mensaje">Escribe un mensaje</string>
 
     <string name="escribir_nombre_contato">Indique el nombre del contacto</string>
+    <string name="cancelar_solicitud">Cancelar solicitud</string>
 
     <string name="login">Login</string>
+    <string name="no_aceptar">No aceptar</string>
 </resources>

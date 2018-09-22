@@ -32,7 +32,7 @@
 
         <service android:name=".MyService" />
 
-        <activity android:name=".ContactosList" />
+        <activity android:name=".ContactosSearchActivity" />
         <activity
             android:name=".ContactosActivity"
             android:theme="@style/AppTheme.NoActionBar"></activity>

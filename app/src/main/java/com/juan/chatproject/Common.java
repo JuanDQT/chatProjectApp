@@ -12,7 +12,6 @@ import android.net.NetworkInfo;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.juan.chatproject.chat.Message;
 import com.juan.chatproject.chat.User;
@@ -31,13 +30,9 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 import io.socket.client.Socket;
@@ -58,6 +53,10 @@ public class Common extends Application {
     private static Socket socket;
     private static SharedPreferences sharedPreferences;
     public static String IDS_REQUEST_CONTACT_RECEIVED = "IDS_REQUEST_CONTACT_RECEIVED";
+    public static final String SOLICITAR_CONTACTO = "SOLICITAR_CONTACTO";
+    public static final String ACEPTAR_CONTACTO = "ACEPTAR_CONTACTO";
+    public static final String DENEGAR_CONTACTO = "DENEGAR_CONTACTO";
+    public static final String CANCELAR_CONTACTO = "CANCELAR_CONTACTO";
 
     @Override
     public void onCreate() {
@@ -100,6 +99,7 @@ public class Common extends Application {
                             }
                         }
                         contactsJSON.put("ids", ids);
+                        contactsJSON.put("ids_contacts_pending", getPendingContacts());
 
                         socket.emit("LOGIN", contactsJSON);
                         /*
@@ -137,19 +137,45 @@ public class Common extends Application {
                     }
                 }
 
-            }).on("GET_ASK_REQUEST_CONTACT", new Emitter.Listener() {
+            }).on("GET_ASK_REQUEST_CONTACT_STATUS", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
 
-                    // TODO: Escucha si alguien te confirmo/nego el anadir contacto
                     try {
 
-                        JSONObject obj = (JSONObject) args[0];
+                        final JSONObject obj = (JSONObject) args[0];
 
-                        // Guardamos las solicitudes entrantes en sharedPreferences...
-                        addNewRequestContact(obj.getString("id_user_from"));
-                        //
+                        final String type = obj.getString("type");
 
+                        switch (type) {
+                            case ACEPTAR_CONTACTO:
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    realm.executeTransaction(new Realm.Transaction() {
+                                        @Override
+                                        public void execute(Realm realm) {
+                                            try {
+
+                                                Log.e(TAGGER, obj.getString("id_user_from") + " ha aceptado tu solicitud");
+                                                User u = realm.where(User.class).equalTo("id", obj.getString("id_user_from")).findFirst();
+
+                                                if (u != null) {
+                                                    u.setPending(false);
+                                                    realm.insertOrUpdate(u);
+                                                    updateRequestContact(obj.getString("id_user_from"), false);
+                                                }
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    });
+                                }
+                                break;
+                            case CANCELAR_CONTACTO:
+                                Log.e(TAGGER, obj.getString("id_user_from") + " ha retirado su solicitud");
+                                updateRequestContact(obj.getString("id_user_from"), false);
+                                break;
+
+                        }
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -598,9 +624,63 @@ public class Common extends Application {
                 json.put("action", action);
                 socket.emit("SET_CONTACTO_STATUS", json);
 
+
+                switch (action) {
+                    case SOLICITAR_CONTACTO:
+
+                        break;
+                    case CANCELAR_CONTACTO:
+
+                        break;
+                    case ACEPTAR_CONTACTO:
+                        Common.updateRequestContact(idUserTo, false);
+                        break;
+                    case DENEGAR_CONTACTO:
+                        Common.updateRequestContact(idUserTo, false);
+                        break;
+                }
+
+                try (Realm realm = Realm.getDefaultInstance()) {
+
+                    realm.executeTransaction(new Realm.Transaction() {
+                        @Override
+                        public void execute(Realm realm) {
+
+                        }
+                    });
+                }
+                //
+                var valorContacto:Boolean ? = null
+                when(action) {
+                    "A" ->{
+                        valorContacto = true
+                    }
+                    "U" ->{
+                        valorContacto = null
+                    }
+
+                }
+                // TODO: VALIDAR...
+
+                allUsers[position].pending = valorContacto
+                Realm.getDefaultInstance().executeTransaction {
+                    r ->
+                    if (action == "A") {
+                        r.insertOrUpdate(allUsers[position])
+                        Log.e(Common.TAGGER, "Contacto anadido")
+                    } else {
+                        r.where(User:: class.java).
+                        equalTo("id", allUsers[position].id).findFirst() ?.deleteFromRealm()
+                    }
+                }
+                //
+
+
                 return true;
             } catch (JSONException e) {
                 e.printStackTrace();
+            } finally {
+
             }
         }
         return false;
@@ -612,19 +692,39 @@ public class Common extends Application {
         return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
-    private static void addNewRequestContact(String id) {
+    public static void updateRequestContact(String id_user_to, boolean delete) {
 
         if (sharedPreferences != null) {
 
             SharedPreferences.Editor editor = sharedPreferences.edit();
 
             Set<String> data = sharedPreferences.getStringSet(IDS_REQUEST_CONTACT_RECEIVED, new HashSet<String>());
-            data.add(id);
+
+            if (delete) {
+                data.add(id_user_to);
+            } else {
+                data.remove(id_user_to);
+            }
 
             editor.putStringSet(IDS_REQUEST_CONTACT_RECEIVED, data);
 
             editor.apply();
         }
+    }
+
+    private static JSONArray getPendingContacts() {
+
+        if (sharedPreferences != null) {
+
+            JSONArray contactsArray = new JSONArray();
+
+            Set<String> data = sharedPreferences.getStringSet(IDS_REQUEST_CONTACT_RECEIVED, new HashSet<String>());
+            for (String s : data) {
+                contactsArray.put(s);
+            }
+            return contactsArray;
+        }
+        return null;
     }
 
 }
