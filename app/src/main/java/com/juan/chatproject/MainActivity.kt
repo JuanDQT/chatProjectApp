@@ -55,11 +55,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
         setupAdapter()
-        loadContacts()
 
         ibSearch.setOnClickListener(this)
         ibContacts.setOnClickListener(this)
     }
+
+
 
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -135,6 +136,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         super.onResume()
         Common.setAppForeground(true)
         Common.setActivityInMain(true)
+        loadContacts()
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_ROW_MESSAGE"))
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getUsers, IntentFilter("MAIN_ACTIVITY_GET_CONTACTS"))
 

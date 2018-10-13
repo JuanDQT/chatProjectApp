@@ -37,7 +37,6 @@
         android:id="@+id/btnActionDeny"
         android:layout_below="@+id/tvName"
         android:layout_marginTop="55dp"
-        tools:text="@string/no_aceptar"
         android:layout_centerHorizontal="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

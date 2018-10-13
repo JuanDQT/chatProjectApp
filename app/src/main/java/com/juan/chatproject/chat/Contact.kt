@@ -19,6 +19,10 @@ open class Contact(@Index private var id_user_from: String = "", @Index private 
         return id_user_from
     }
 
+    fun setStatus(newStatus: String) {
+        this.status = newStatus
+    }
+
 
     companion object access {
         fun getUsersIdJSONArray(realm: Realm): JSONArray {

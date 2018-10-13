@@ -54,33 +54,23 @@ class ContactosFragment : Fragment() {
 
         // TODO: validar funcionamiento, recibir peticion, cambiar alertdialog, validar bbdd, que passa si es offline, etc.
 
+        LocalBroadcastManager.getInstance(context).registerReceiver(getContactStatus, IntentFilter(""))
+
         return view
     }
 
-    // OBSERVER - CONTACTS
-    private val getContacts = object : BroadcastReceiver() {
+    val getContactStatus = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
-            tipoActivity?.let { tipo ->
+            Realm.getDefaultInstance().use { realm ->
 
-                if (tipo == ContactosActivity().TIPO_ENVIADAS) {
-                    // TODO 29/09/18: cargar lista de localbroadcast P o E...
-                } else {
-
-                }
-
-                intent?.let { it ->
-                    val list: ArrayList<User> = it.getSerializableExtra("users") as ArrayList<User>
-                    allUsers.clear()
-                    allUsers.addAll(list)
-                    Log.e(Common.TAGGER, "Te actualizamos data: " + list.size)
-
-                    adapter?.notifyDataSetChanged()
-                }
+                realm.executeTransaction { }
             }
+
         }
     }
 
+    // OBSERVER - CONTACTS
 
     fun setUpContactsAdapter() {
 
@@ -99,7 +89,6 @@ class ContactosFragment : Fragment() {
                 .addClickListener { item, position ->
 
                     // TODO: al enviar solicitud, guardar usuario en bbdd
-                    /*
                     val builder = AlertDialog.Builder(context)
                     builder.setTitle(getString(R.string.informacion))
                     val view = LayoutInflater.from(context).inflate(R.layout.ad_contacto, null)
@@ -108,40 +97,32 @@ class ContactosFragment : Fragment() {
                     val btnActionDeny = view.findViewById<Button>(R.id.btnActionDeny)
                     val civPic = view.findViewById<CircleImageView>(R.id.civPic)
                     tvName.text = allUsers[position].name
-                    var action = "" // U = cancelar solicitud enviada,
 
                     Picasso.with(context).load(allUsers[position].avatar).into(civPic)
 
                     if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_PENDIENTES) {
-                        btnAction.text = getString(R.string.no_aceptar)
+
+                        btnAction.text = getString(R.string.aceptar_solicitud)
+                        btnActionDeny.text = getString(R.string.no_aceptar_solicitud)
+                        btnActionDeny.visibility = View.VISIBLE
 
                         btnAction.setOnClickListener {
 
-                            if (Common.setContactoStatus(allUsers[position].id, Common.ACEPTAR_CONTACTO)) {
-//                                allUsers[position].pending = false
-                                Realm.getDefaultInstance().executeTransaction { r ->
-                                    r.insertOrUpdate(allUsers[position])
-                                    Log.e(Common.TAGGER, "Contacto anadido")
-                                }
-                            }
+                            Common.setContactoStatus(allUsers[position].id, Common.getClientId(), Common.ACEPTAR_CONTACTO)
+                            dialog?.dismiss()
+                            return@setOnClickListener
                         }
 
-                        // delete form local set
-                        // delete linea bbdd remota
+                        btnActionDeny.setOnClickListener {
 
-                        btnActionDeny.visibility = View.VISIBLE
-                        btnAction.setOnClickListener {
-
-                            if (Common.setContactoStatus(allUsers[position].id, Common.DENEGAR_CONTACTO)) {
-                                val sp: SharedPreferences = context.getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-                                val data = sp.getStringSet(Common.IDS_REQUEST_CONTACT_RECEIVED, hashSetOf())
-                                Common.searchUsersById(ArrayList(data))
-                                dialog?.dismiss()
-                            }
+                            Common.setContactoStatus(allUsers[position].id, Common.getClientId(), Common.DENEGAR_CONTACTO)
+                            dialog?.dismiss()
+                            return@setOnClickListener
                         }
 
                     } else {
 
+/*
                         btnAction.setOnClickListener {
 
                             if (Common.setContactoStatus(allUsers[position].id, Common.CANCELAR_CONTACTO)) {
@@ -173,6 +154,7 @@ class ContactosFragment : Fragment() {
                                 dialog?.dismiss()
                             }
                         }
+*/
 
 
 //                        allUsers[position].pending?.let { condition ->
@@ -186,7 +168,7 @@ class ContactosFragment : Fragment() {
                     builder.setView(view)
 
                     dialog = builder.create()
-                    dialog?.show()*/
+                    dialog?.show()
 
                 }
                 .addLongClickListener { item, position ->

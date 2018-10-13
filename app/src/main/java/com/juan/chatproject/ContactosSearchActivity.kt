@@ -107,15 +107,15 @@ class ContactosSearchActivity : AppCompatActivity() {
 
                     btnAction.setOnClickListener {
 
-                        if (Common.setContactoStatus(allUsers[position].id, Common.SOLICITAR_CONTACTO)) {
-//                            allUsers[position].pending = true
-                            Realm.getDefaultInstance().executeTransaction { r ->
-                                r.insertOrUpdate(allUsers[position])
-                            }
-
-                            dialog?.dismiss()
-                            updateContactList()
-                        }
+//                        if (Common.setContactoStatus(allUsers[position].id, Common.SOLICITAR_CONTACTO)) {
+////                            allUsers[position].pending = true
+//                            Realm.getDefaultInstance().executeTransaction { r ->
+//                                r.insertOrUpdate(allUsers[position])
+//                            }
+//
+//                            dialog?.dismiss()
+//                            updateContactList()
+//                        }
                     }
 
                     builder.setView(view)

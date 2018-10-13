@@ -229,32 +229,69 @@ public class Common extends Application {
 
                         final String type = obj.getString("type");
 
+                        if (obj.has("error")) {
+                            return;
+                        }
+
                         switch (type) {
                             case ACEPTAR_CONTACTO:
+                                Log.e(TAGGER, "[ACEPTAR_CONTACTO]");
                                 try (Realm realm = Realm.getDefaultInstance()) {
                                     realm.executeTransaction(new Realm.Transaction() {
                                         @Override
                                         public void execute(Realm realm) {
                                             try {
+                                                Contact contact = realm.where(Contact.class).
+                                                        equalTo("id_user_from", obj.getString("id_user_from"))
+                                                        .and()
+                                                        .equalTo("id_user_to", obj.getString("id_user_to")).
+                                                                findFirst();
 
-                                                Log.e(TAGGER, obj.getString("id_user_from") + " ha aceptado tu solicitud");
-                                                User u = realm.where(User.class).equalTo("id", obj.getString("id_user_from")).findFirst();
-
-                                                if (u != null) {
-//                                                    u.setPending(false);
-                                                    realm.insertOrUpdate(u);
-                                                    updateRequestContact(obj.getString("id_user_from"), false);
+                                                Log.e(TAGGER, "En execute...");
+                                                if (contact != null) {
+                                                    contact.setStatus("A");
+                                                    realm.insertOrUpdate(contact);
+                                                    Log.e(TAGGER, "Actualizando...");
                                                 }
+
+                                                // TODO: REFRESCAR VISTA acepto la persona
                                             } catch (JSONException e) {
                                                 e.printStackTrace();
                                             }
                                         }
                                     });
                                 }
+
                                 break;
+                            case DENEGAR_CONTACTO:
                             case CANCELAR_CONTACTO:
-                                Log.e(TAGGER, obj.getString("id_user_from") + " ha retirado su solicitud");
-                                updateRequestContact(obj.getString("id_user_from"), false);
+                                Log.e(TAGGER, "[DENEGAR CONTACTO]");
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    realm.executeTransaction(new Realm.Transaction() {
+                                        @Override
+                                        public void execute(Realm realm) {
+                                            try {
+                                                Contact contact = realm.where(Contact.class).
+                                                        equalTo("id_user_from", obj.getString("id_user_from"))
+                                                        .and()
+                                                        .equalTo("id_user_to", obj.getString("id_user_to")).
+                                                                findFirst();
+                                                Log.e(TAGGER, "En execute...");
+                                                if (contact != null) {
+                                                    contact.deleteFromRealm();
+                                                    Log.e(TAGGER, "Actualizando...");
+                                                }
+                                                // TODO: REFRESCAR VISTA acepto la persona
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+
+                                        }
+                                    });
+
+                                }
+//                                Log.e(TAGGER, obj.getString("id_user_from") + " ha retirado su solicitud");
+//                                updateRequestContact(obj.getString("id_user_from"), false);
                                 break;
 
                         }
@@ -632,50 +669,18 @@ public class Common extends Application {
         }
     }
 
-    public static boolean setContactoStatus(String idUserTo, String action) {
+    public static void setContactoStatus(String idUserFrom, String idUserTo, String action) {
         if (Common.isOnline() && socket.connected()) {
             JSONObject json = new JSONObject();
             try {
-                json.put("id_user_from", Common.getClientId());
+                json.put("id_user_from", idUserFrom);
                 json.put("id_user_to", idUserTo);
                 json.put("action", action);
                 socket.emit("SET_CONTACTO_STATUS", json);
-
-
-                switch (action) {
-                    case SOLICITAR_CONTACTO:
-
-                        break;
-                    case CANCELAR_CONTACTO:
-
-                        break;
-                    case ACEPTAR_CONTACTO:
-                        Common.updateRequestContact(idUserTo, false);
-                        break;
-                    case DENEGAR_CONTACTO:
-                        Common.updateRequestContact(idUserTo, false);
-                        break;
-                }
-
-                try (Realm realm = Realm.getDefaultInstance()) {
-
-                    realm.executeTransaction(new Realm.Transaction() {
-                        @Override
-                        public void execute(Realm realm) {
-
-                        }
-                    });
-                }
-
-
-                return true;
             } catch (JSONException e) {
                 e.printStackTrace();
-            } finally {
-
             }
         }
-        return false;
     }
 
     public static boolean isOnline() {

@@ -16,5 +16,6 @@
     <string name="cancelar_solicitud">Cancelar solicitud</string>
 
     <string name="login">Login</string>
-    <string name="no_aceptar">No aceptar</string>
+    <string name="no_aceptar_solicitud">No aceptar</string>
+    <string name="aceptar_solicitud">Aceptar solicitud</string>
 </resources>

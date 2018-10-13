@@ -99,11 +99,10 @@ class LocalDataBase {
 
             Realm.getDefaultInstance().use {
                 if (type == "E") {
-                    return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_from", Common.getClientId()).findAll())?.map { item -> item.getIdUserTo() }
+                    return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_from", Common.getClientId()).and().equalTo("status", "P").findAll())?.map { item -> item.getIdUserTo() }
                 } else {
-                    return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_to", Common.getClientId()).findAll())?.map { item -> item.getIdUserFrom() }
+                    return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_to", Common.getClientId()).and().equalTo("status", "P").findAll())?.map { item -> item.getIdUserFrom() }
                 }
-//                data = it.copyFromRealm(it.where(Contact::class.java).equalTo(if (type == "E") "id_user_from" else "id_user_to", Common.getClientId()).findAll())?.map { item -> if (type == "E") item.getIdUserTo() else item.getIdUserTo() }
             }
         }
 
