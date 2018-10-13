@@ -44,20 +44,13 @@ class ContactosFragment : Fragment() {
         if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_PENDIENTES) {
 
             tipoActivity = ContactosActivity().TIPO_PENDIENTES
-            val sp: SharedPreferences = context.getSharedPreferences(Common.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE)
-            val data = sp.getStringSet(Common.IDS_REQUEST_CONTACT_RECEIVED, hashSetOf())
-            context.shortToast("IDS Entrantes: " + data.size)
-            Common.searchUsersById(ArrayList(data))
-            Log.e(Common.TAGGER, "Cargamos Pendientes: ")
-            LocalBroadcastManager.getInstance(context).registerReceiver(getContacts, IntentFilter("SERCH_USERS_DATA"))
+            val idsContacts = LocalDataBase.getUserIdsSentOrGet("P")
+            loadSolicitudesEnviadas(idsContacts)
         } else {
             tipoActivity = ContactosActivity().TIPO_ENVIADAS
-            loadRequestContactSent()
-            Log.e(Common.TAGGER, "Cargamos Enviadas: ${allUsers.count()}")
+            val idsContacts = LocalDataBase.getUserIdsSentOrGet("E")
+            loadSolicitudesEnviadas(idsContacts)
         }
-
-
-        // Boradcaster listener... De si alguien te acepto en la misma pantallla...
 
         // TODO: validar funcionamiento, recibir peticion, cambiar alertdialog, validar bbdd, que passa si es offline, etc.
 
@@ -70,8 +63,11 @@ class ContactosFragment : Fragment() {
 
             tipoActivity?.let { tipo ->
 
-                if (tipo == ContactosActivity().TIPO_ENVIADAS)
-                    return
+                if (tipo == ContactosActivity().TIPO_ENVIADAS) {
+                    // TODO 29/09/18: cargar lista de localbroadcast P o E...
+                } else {
+
+                }
 
                 intent?.let { it ->
                     val list: ArrayList<User> = it.getSerializableExtra("users") as ArrayList<User>
@@ -85,15 +81,6 @@ class ContactosFragment : Fragment() {
         }
     }
 
-
-    fun loadRequestContactSent() {
-        Realm.getDefaultInstance().use { r ->
-            allUsers.clear()
-            allUsers.addAll(r.copyFromRealm(r.where(User::class.java).notEqualTo("id", Common.getClientId()).and().equalTo("pending", true).findAll()))
-            adapter?.notifyDataSetChanged()
-        }
-
-    }
 
     fun setUpContactsAdapter() {
 
@@ -110,6 +97,9 @@ class ContactosFragment : Fragment() {
 
                 }
                 .addClickListener { item, position ->
+
+                    // TODO: al enviar solicitud, guardar usuario en bbdd
+                    /*
                     val builder = AlertDialog.Builder(context)
                     builder.setTitle(getString(R.string.informacion))
                     val view = LayoutInflater.from(context).inflate(R.layout.ad_contacto, null)
@@ -128,7 +118,7 @@ class ContactosFragment : Fragment() {
                         btnAction.setOnClickListener {
 
                             if (Common.setContactoStatus(allUsers[position].id, Common.ACEPTAR_CONTACTO)) {
-                                allUsers[position].pending = false
+//                                allUsers[position].pending = false
                                 Realm.getDefaultInstance().executeTransaction { r ->
                                     r.insertOrUpdate(allUsers[position])
                                     Log.e(Common.TAGGER, "Contacto anadido")
@@ -167,7 +157,7 @@ class ContactosFragment : Fragment() {
                                 }
                                 // TODO: VALIDAR...
 
-                                allUsers[position].pending = valorContacto
+//                                allUsers[position].pending = valorContacto
                                 Realm.getDefaultInstance().executeTransaction { r ->
                                     if (action == Common.SOLICITAR_CONTACTO) {
                                         r.insertOrUpdate(allUsers[position])
@@ -185,10 +175,10 @@ class ContactosFragment : Fragment() {
                         }
 
 
-                        allUsers[position].pending?.let { condition ->
-                            btnAction.text = getString(R.string.cancelar_solicitud)
-                            action = Common.CANCELAR_CONTACTO
-                        }
+//                        allUsers[position].pending?.let { condition ->
+//                            btnAction.text = getString(R.string.cancelar_solicitud)
+//                            action = Common.CANCELAR_CONTACTO
+//                        }
                     }
 
 
@@ -196,13 +186,24 @@ class ContactosFragment : Fragment() {
                     builder.setView(view)
 
                     dialog = builder.create()
-                    dialog?.show()
+                    dialog?.show()*/
 
                 }
                 .addLongClickListener { item, position ->
                     //Take action when item is long pressed
                 }.build()
         mList?.adapter = adapter
+    }
+
+    fun loadSolicitudesEnviadas(ids: List<String>?) {
+
+        ids?.let {
+            allUsers.clear()
+            allUsers.addAll(LocalDataBase.getUsersById(ids))
+            Log.e(Common.TAGGER, "Te actualizamos data: " + allUsers.size)
+
+            adapter?.notifyDataSetChanged()
+        }
     }
 
 }

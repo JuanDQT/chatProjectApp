@@ -26,9 +26,10 @@ class LoginActivity : AppCompatActivity() {
             if (!etLogin.text.toString().isEmpty() && numbersAvailable.containsKey(etLogin.text.toString())) {
 
                 sharedPreferences.edit().putString("FROM", numbersAvailable.getValue(etLogin.text.toString())).apply()
+                sharedPreferences.edit().putBoolean(Common.FIRST_ON, true).apply()
 
                 Realm.getDefaultInstance().executeTransaction {
-                    it.insertOrUpdate(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false, false))
+                    it.insertOrUpdate(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false))
 //                    it.copyToRealm(User(numbersAvailable.getValue(etLogin.text.toString()), "JUAN", "", true, null, null, false))
                 }
 

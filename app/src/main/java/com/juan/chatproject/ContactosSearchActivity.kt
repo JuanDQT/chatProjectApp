@@ -54,8 +54,6 @@ class ContactosSearchActivity : AppCompatActivity() {
                 }
             }
         })
-
-        LocalBroadcastManager.getInstance(this@ContactosSearchActivity).registerReceiver(getContacts, IntentFilter("SERCH_USERS_DATA"))
     }
 
     fun updateContactList() {
@@ -73,7 +71,7 @@ class ContactosSearchActivity : AppCompatActivity() {
             intent?.let {
                 val list: ArrayList<User> = it.getSerializableExtra("users") as ArrayList<User>
                 allUsers.clear()
-                allUsers.addAll(list.filter { u -> u.pending == false || u.pending == null })
+//                allUsers.addAll(list.filter { u -> u.pending == false || u.pending == null })
 
                 adapter?.notifyDataSetChanged()
             }
@@ -110,7 +108,7 @@ class ContactosSearchActivity : AppCompatActivity() {
                     btnAction.setOnClickListener {
 
                         if (Common.setContactoStatus(allUsers[position].id, Common.SOLICITAR_CONTACTO)) {
-                            allUsers[position].pending = true
+//                            allUsers[position].pending = true
                             Realm.getDefaultInstance().executeTransaction { r ->
                                 r.insertOrUpdate(allUsers[position])
                             }

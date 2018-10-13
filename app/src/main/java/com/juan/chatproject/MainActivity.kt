@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     fun loadContacts() {
         realm?.let {
-            val data = LocalDataBase.getAllUsers(it) as ArrayList<User>
+            val data = LocalDataBase.getAllUsers(it)
             allUsers.clear()
             allUsers.addAll(data)
             adapter?.notifyDataSetChanged()
