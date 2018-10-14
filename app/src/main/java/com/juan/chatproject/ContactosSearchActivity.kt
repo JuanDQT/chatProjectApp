@@ -26,6 +26,7 @@ class ContactosSearchActivity : AppCompatActivity() {
     var allUsers: ArrayList<User> = arrayListOf()
     var adapter: RecyclerAdapterUtil<User>? = null
     var dialog: AlertDialog? = null
+    var userPositionList = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,25 +55,28 @@ class ContactosSearchActivity : AppCompatActivity() {
                 }
             }
         })
+
+        LocalBroadcastManager.getInstance(this@ContactosSearchActivity).registerReceiver(getUsersSearch, IntentFilter("SERCH_USERS_DATA"))
+        LocalBroadcastManager.getInstance(this@ContactosSearchActivity).registerReceiver(getUpdateSearch, IntentFilter("UPDATE_LIST_SERCHED"))
     }
 
-    fun updateContactList() {
-        Realm.getDefaultInstance().use { r ->
-            allUsers.clear()
-            allUsers.addAll(r.copyFromRealm(r.where(User::class.java).notEqualTo("id", Common.getClientId()).and().notEqualTo("pending", true).findAll()))
-            adapter?.notifyDataSetChanged()
+    private val getUpdateSearch = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            dialog?.dismiss()
+            Common.searchUsersByName(etSearch.text.toString())
+
+            LocalDataBase.insertUser(allUsers[userPositionList])
         }
-
     }
 
-    private val getContacts = object : BroadcastReceiver() {
+
+    private val getUsersSearch = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
             intent?.let {
-                val list: ArrayList<User> = it.getSerializableExtra("users") as ArrayList<User>
+                val list: ArrayList<User> = (it.getSerializableExtra("users") as ArrayList<User>)
                 allUsers.clear()
-//                allUsers.addAll(list.filter { u -> u.pending == false || u.pending == null })
-
+                allUsers.addAll(list)
                 adapter?.notifyDataSetChanged()
             }
         }
@@ -99,6 +103,9 @@ class ContactosSearchActivity : AppCompatActivity() {
                     val tvName = view.findViewById<TextView>(R.id.tvName)
                     val btnAction = view.findViewById<Button>(R.id.btnAction)
                     val civPic = view.findViewById<CircleImageView>(R.id.civPic)
+
+                    userPositionList = position
+
                     tvName.text = allUsers[position].name
 
                     btnAction.text = getString(R.string.enviar_solicitud)
@@ -106,16 +113,9 @@ class ContactosSearchActivity : AppCompatActivity() {
                     Picasso.with(this@ContactosSearchActivity).load(allUsers[position].avatar).into(civPic)
 
                     btnAction.setOnClickListener {
-
-//                        if (Common.setContactoStatus(allUsers[position].id, Common.SOLICITAR_CONTACTO)) {
-////                            allUsers[position].pending = true
-//                            Realm.getDefaultInstance().executeTransaction { r ->
-//                                r.insertOrUpdate(allUsers[position])
-//                            }
-//
-//                            dialog?.dismiss()
-//                            updateContactList()
-//                        }
+                        Common.setContactoStatus(Common.getClientId(), allUsers[position].id, Common.SOLICITAR_CONTACTO)
+                        dialog?.dismiss()
+                        return@setOnClickListener
                     }
 
                     builder.setView(view)

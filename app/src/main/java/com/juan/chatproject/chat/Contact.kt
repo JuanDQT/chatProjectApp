@@ -23,6 +23,14 @@ open class Contact(@Index private var id_user_from: String = "", @Index private 
         this.status = newStatus
     }
 
+    fun setIdUserFrom(id: String) {
+        this.id_user_from = id
+    }
+    fun setIdUserTo(id: String) {
+        this.id_user_to = id
+    }
+
+
 
     companion object access {
         fun getUsersIdJSONArray(realm: Realm): JSONArray {

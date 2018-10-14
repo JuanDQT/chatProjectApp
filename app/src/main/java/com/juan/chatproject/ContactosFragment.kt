@@ -44,22 +44,37 @@ class ContactosFragment : Fragment() {
             loadSolicitudes(ContactosActivity.TIPO_ENVIADAS)
         }
 
-        // TODO: validar funcionamiento, recibir peticion, cambiar alertdialog, validar bbdd, que passa si es offline, etc.
-
         LocalBroadcastManager.getInstance(context).registerReceiver(reloadSolicitudes, IntentFilter("RELOAD_SOLICITUDES"))
 
         return view
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        if (arguments.getString(ContactosActivity.TIPO) == ContactosActivity.TIPO_PENDIENTES) {
+            tipoFragment = arguments.getString(ContactosActivity.TIPO)
+            loadSolicitudes(ContactosActivity.TIPO_PENDIENTES)
+        } else {
+            tipoFragment = arguments.getString(ContactosActivity.TIPO)
+            loadSolicitudes(ContactosActivity.TIPO_ENVIADAS)
+        }
+    }
+
     val reloadSolicitudes = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
+            Log.e(Common.TAGGER, "reloadSolicitudes")
             val type = intent?.extras?.getString("TYPE")
 
             type?.let {
+                Log.e(Common.TAGGER, "Type: " + it)
 
-                if (ForegroundCheckTask().execute(context).get())
+                if (ForegroundCheckTask().execute(context).get()) {
                     loadSolicitudes(it)
+                    Log.e(Common.TAGGER, "Dentro de foreground...")
+
+                }
             }
         }
     }
@@ -82,7 +97,6 @@ class ContactosFragment : Fragment() {
                 }
                 .addClickListener { item, position ->
 
-                    // TODO: al enviar solicitud, guardar usuario en bbdd
                     val builder = AlertDialog.Builder(context)
                     builder.setTitle(getString(R.string.informacion))
                     val view = LayoutInflater.from(context).inflate(R.layout.ad_contacto, null)

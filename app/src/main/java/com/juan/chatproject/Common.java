@@ -55,8 +55,8 @@ public class Common extends Application {
     private static SharedPreferences sharedPreferences;
     public static final String ACEPTAR_CONTACTO = "ACEPTAR_CONTACTO";
     public static final String DENEGAR_CONTACTO = "DENEGAR_CONTACTO";
-
     public static final String CANCELAR_ENVIO_SOLICITUD = "CANCELAR_ENVIO_SOLICITUD";
+
 
     public static final String SOLICITAR_CONTACTO = "SOLICITAR_CONTACTO";
 
@@ -103,7 +103,6 @@ public class Common extends Application {
                                 try (Realm r = Realm.getDefaultInstance()) {
                                     List<Contact> contacts = r.copyFromRealm(r.where(Contact.class).findAll());
                                     List<User> users = r.copyFromRealm(r.where(User.class).findAll());
-                                    Log.e(TAGGER, "PAUSA");
                                 }
 
                                 JSONArray usersId = Contact.access.getUsersIdJSONArray(realm);
@@ -236,9 +235,6 @@ public class Common extends Application {
                             return;
                         }
 
-                        boolean actualizarActivityContactos = false;
-                        boolean actualizarActivityMain = false;
-
                         switch (type) {
                             case ACEPTAR_CONTACTO:
                                 Log.e(TAGGER, "[ACEPTAR_CONTACTO]");
@@ -255,12 +251,11 @@ public class Common extends Application {
 
                                                 Log.e(TAGGER, "En execute...");
                                                 if (contact != null) {
-                                                    contact.setStatus("A");
+                                                    contact.setStatus(obj.getString("value"));
                                                     realm.insertOrUpdate(contact);
                                                     Log.e(TAGGER, "Actualizando...");
                                                 }
 
-                                                // TODO: REFRESCAR VISTA acepto la persona
                                             } catch (JSONException e) {
                                                 e.printStackTrace();
                                             }
@@ -288,22 +283,46 @@ public class Common extends Application {
                                                 if (contact != null) {
                                                     contact.deleteFromRealm();
                                                     Log.e(TAGGER, "Actualizando...");
-
-
                                                 }
-                                                // TODO: REFRESCAR VISTA acepto la persona
                                             } catch (JSONException e) {
                                                 e.printStackTrace();
                                             }
                                         }
                                     });
                                 } finally {
+                                    Log.e(TAGGER, "***Entre: notifyUserContactView: " + obj.getString("id_user_from"));
                                     notifyUserContactView(obj.getString("id_user_from"));
                                 }
                                 break;
+                            case SOLICITAR_CONTACTO:
+                                Log.e(TAGGER, "[SOLICITAR_CONTACTO]");
+                                try (Realm realm = Realm.getDefaultInstance()) {
+                                    realm.executeTransaction(new Realm.Transaction() {
+                                        @Override
+                                        public void execute(Realm realm) {
+                                            try {
+                                                Contact contact = new Contact();
+                                                contact.setIdUserFrom(obj.getString("id_user_from"));
+                                                contact.setIdUserTo(obj.getString("id_user_to"));
+                                                contact.setStatus(obj.getString("value"));
+                                                realm.insertOrUpdate(contact);
+                                                Log.e(TAGGER, "Actualizando...");
 
+                                                if (obj.getString("id_user_to").equals(getClientId()) && obj.has("user")) {
+                                                    for (User u : getUsersFromJSONArray(obj.getJSONArray("user"))) {
+                                                        realm.insertOrUpdate(u);
+                                                    }
+                                                }
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    });
+                                } finally {
+                                    notifySearchUserView(obj.getString("id_user_from"));
+                                }
+                                break;
                         }
-
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -346,7 +365,6 @@ public class Common extends Application {
                     JSONArray array = (JSONArray) args[0];
 
                     ArrayList<User> users = getUsersFromJSONArray(array);
-                    //LocalDataBase.access.updateUsers(realm, users); Delete?
                     Intent data = new Intent("SERCH_USERS_DATA");
                     data.putExtra("users", users);
                     Log.i(TAGGER, "***Total encontrados: " + users.size());
@@ -700,10 +718,23 @@ public class Common extends Application {
 
     private static void notifyUserContactView(String userFrom) {
         Intent intent = new Intent("RELOAD_SOLICITUDES");
+        Log.e(TAGGER, "*** userFrom" + userFrom);
 
         if (getClientId().equals(userFrom)) {
+
             intent.putExtra("TYPE", ContactosActivity.access.getTIPO_ENVIADAS());
         } else {
+            intent.putExtra("TYPE", ContactosActivity.access.getTIPO_PENDIENTES());
+        }
+        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+    }
+
+    private static void notifySearchUserView(String userFrom) {
+        Intent intent = null;
+        if (getClientId().equals(userFrom)) {
+            intent = new Intent("UPDATE_LIST_SERCHED");
+        } else {
+            intent = new Intent("RELOAD_SOLICITUDES");
             intent.putExtra("TYPE", ContactosActivity.access.getTIPO_PENDIENTES());
         }
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));

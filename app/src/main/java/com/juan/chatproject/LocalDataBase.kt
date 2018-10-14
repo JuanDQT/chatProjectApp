@@ -217,6 +217,11 @@ class LocalDataBase {
             }
         }
 
+        fun insertUser(user: User) {
+            Realm.getDefaultInstance().executeTransaction {
+                it.insertOrUpdate(user)
+            }
+        }
     }
 
 }
