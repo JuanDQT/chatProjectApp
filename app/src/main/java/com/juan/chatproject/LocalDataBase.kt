@@ -98,7 +98,7 @@ class LocalDataBase {
         fun getUserIdsSentOrGet(type: String): List<String>? {
 
             Realm.getDefaultInstance().use {
-                if (type == "E") {
+                if (type == ContactosActivity.TIPO_ENVIADAS) {
                     return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_from", Common.getClientId()).and().equalTo("status", "P").findAll())?.map { item -> item.getIdUserTo() }
                 } else {
                     return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_to", Common.getClientId()).and().equalTo("status", "P").findAll())?.map { item -> item.getIdUserFrom() }

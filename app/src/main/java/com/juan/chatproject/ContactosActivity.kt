@@ -20,9 +20,12 @@ import kotlinx.android.synthetic.main.fragment_contactos.view.*
 
 class ContactosActivity : AppCompatActivity() {
 
-    val TIPO = "TIPO"
-    val TIPO_PENDIENTES = "PENDIENTES"
-    val TIPO_ENVIADAS = "ENVIADAS"
+    companion object access {
+        val TIPO = "TIPO"
+        val TIPO_PENDIENTES = "PENDIENTES"
+        val TIPO_ENVIADAS = "ENVIADAS"
+    }
+
 
     var fragments = emptyArray<Fragment>()
 

@@ -2,7 +2,6 @@ package com.juan.chatproject
 
 
 import android.content.*
-import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.content.LocalBroadcastManager
@@ -18,17 +17,14 @@ import android.widget.TextView
 import com.juan.chatproject.chat.User
 import com.squareup.picasso.Picasso
 import com.thetechnocafe.gurleensethi.liteutils.RecyclerAdapterUtil
-import com.thetechnocafe.gurleensethi.liteutils.shortToast
 import de.hdodenhof.circleimageview.CircleImageView
-import io.realm.Realm
 
 class ContactosFragment : Fragment() {
 
     var allUsers: ArrayList<User> = arrayListOf()
     var adapter: RecyclerAdapterUtil<User>? = null
-    var tipoActivity: String? = null
     var dialog: AlertDialog? = null
-
+    var tipoFragment = ""
     var mList: RecyclerView? = null
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -38,35 +34,33 @@ class ContactosFragment : Fragment() {
         mList = view?.findViewById<RecyclerView>(R.id.rvContactos)
         mList?.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
 
-
         setUpContactsAdapter()
 
-        if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_PENDIENTES) {
-
-            tipoActivity = ContactosActivity().TIPO_PENDIENTES
-            val idsContacts = LocalDataBase.getUserIdsSentOrGet("P")
-            loadSolicitudesEnviadas(idsContacts)
+        if (arguments.getString(ContactosActivity.TIPO) == ContactosActivity.TIPO_PENDIENTES) {
+            tipoFragment = arguments.getString(ContactosActivity.TIPO)
+            loadSolicitudes(ContactosActivity.TIPO_PENDIENTES)
         } else {
-            tipoActivity = ContactosActivity().TIPO_ENVIADAS
-            val idsContacts = LocalDataBase.getUserIdsSentOrGet("E")
-            loadSolicitudesEnviadas(idsContacts)
+            tipoFragment = arguments.getString(ContactosActivity.TIPO)
+            loadSolicitudes(ContactosActivity.TIPO_ENVIADAS)
         }
 
         // TODO: validar funcionamiento, recibir peticion, cambiar alertdialog, validar bbdd, que passa si es offline, etc.
 
-        LocalBroadcastManager.getInstance(context).registerReceiver(getContactStatus, IntentFilter(""))
+        LocalBroadcastManager.getInstance(context).registerReceiver(reloadSolicitudes, IntentFilter("RELOAD_SOLICITUDES"))
 
         return view
     }
 
-    val getContactStatus = object : BroadcastReceiver() {
+    val reloadSolicitudes = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
-            Realm.getDefaultInstance().use { realm ->
+            val type = intent?.extras?.getString("TYPE")
 
-                realm.executeTransaction { }
+            type?.let {
+
+                if (ForegroundCheckTask().execute(context).get())
+                    loadSolicitudes(it)
             }
-
         }
     }
 
@@ -100,7 +94,7 @@ class ContactosFragment : Fragment() {
 
                     Picasso.with(context).load(allUsers[position].avatar).into(civPic)
 
-                    if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_PENDIENTES) {
+                    if (arguments.getString(ContactosActivity.TIPO) == ContactosActivity.TIPO_PENDIENTES) {
 
                         btnAction.text = getString(R.string.aceptar_solicitud)
                         btnActionDeny.text = getString(R.string.no_aceptar_solicitud)
@@ -121,46 +115,14 @@ class ContactosFragment : Fragment() {
                         }
 
                     } else {
+                        btnAction.text = getString(R.string.cancelar_solicitud)
 
-/*
                         btnAction.setOnClickListener {
 
-                            if (Common.setContactoStatus(allUsers[position].id, Common.CANCELAR_CONTACTO)) {
-                                var valorContacto: Boolean? = null
-                                when (action) {
-                                    Common.SOLICITAR_CONTACTO -> {
-                                        valorContacto = true
-                                    }
-                                    "U" -> {
-                                        valorContacto = null
-                                    }
-
-                                }
-                                // TODO: VALIDAR...
-
-//                                allUsers[position].pending = valorContacto
-                                Realm.getDefaultInstance().executeTransaction { r ->
-                                    if (action == Common.SOLICITAR_CONTACTO) {
-                                        r.insertOrUpdate(allUsers[position])
-                                        Log.e(Common.TAGGER, "Contacto anadido")
-                                    } else {
-                                        r.where(User::class.java).equalTo("id", allUsers[position].id).findFirst()?.deleteFromRealm()
-                                    }
-                                }
-                            }
-
-                            if (arguments.getString(ContactosActivity().TIPO) == ContactosActivity().TIPO_ENVIADAS) {
-                                loadRequestContactSent()
-                                dialog?.dismiss()
-                            }
+                            Common.setContactoStatus(Common.getClientId(), allUsers[position].id, Common.CANCELAR_ENVIO_SOLICITUD)
+                            dialog?.dismiss()
+                            return@setOnClickListener
                         }
-*/
-
-
-//                        allUsers[position].pending?.let { condition ->
-//                            btnAction.text = getString(R.string.cancelar_solicitud)
-//                            action = Common.CANCELAR_CONTACTO
-//                        }
                     }
 
 
@@ -177,14 +139,26 @@ class ContactosFragment : Fragment() {
         mList?.adapter = adapter
     }
 
-    fun loadSolicitudesEnviadas(ids: List<String>?) {
+    fun loadSolicitudes(tipo: String) {
+
+
+        var ids: List<String>? = emptyList<String>()
+
+        ids = LocalDataBase.getUserIdsSentOrGet(tipo)
+
+
+        Log.e(Common.TAGGER, "TIPO: $tipo , Solicitudes: " + ids?.toString())
 
         ids?.let {
-            allUsers.clear()
-            allUsers.addAll(LocalDataBase.getUsersById(ids))
-            Log.e(Common.TAGGER, "Te actualizamos data: " + allUsers.size)
 
-            adapter?.notifyDataSetChanged()
+            if (tipoFragment == tipo) {
+                allUsers.clear()
+                allUsers.addAll(LocalDataBase.getUsersById(it))
+                Log.e(Common.TAGGER, "Te actualizamos data: " + allUsers.size)
+
+                adapter?.notifyDataSetChanged()
+            }
+
         }
     }
 

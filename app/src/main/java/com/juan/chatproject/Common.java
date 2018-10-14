@@ -53,10 +53,12 @@ public class Common extends Application {
 
     private static Socket socket;
     private static SharedPreferences sharedPreferences;
-    public static final String SOLICITAR_CONTACTO = "SOLICITAR_CONTACTO";
     public static final String ACEPTAR_CONTACTO = "ACEPTAR_CONTACTO";
     public static final String DENEGAR_CONTACTO = "DENEGAR_CONTACTO";
-    public static final String CANCELAR_CONTACTO = "CANCELAR_CONTACTO";
+
+    public static final String CANCELAR_ENVIO_SOLICITUD = "CANCELAR_ENVIO_SOLICITUD";
+
+    public static final String SOLICITAR_CONTACTO = "SOLICITAR_CONTACTO";
 
     public static final String FIRST_ON = "FIRST_ON";
 
@@ -230,8 +232,12 @@ public class Common extends Application {
                         final String type = obj.getString("type");
 
                         if (obj.has("error")) {
+                            Log.e(TAGGER, "Datos no sincronizados");
                             return;
                         }
+
+                        boolean actualizarActivityContactos = false;
+                        boolean actualizarActivityMain = false;
 
                         switch (type) {
                             case ACEPTAR_CONTACTO:
@@ -260,12 +266,14 @@ public class Common extends Application {
                                             }
                                         }
                                     });
+                                } finally {
+                                    notifyUserContactView(obj.getString("id_user_from"));
                                 }
 
                                 break;
                             case DENEGAR_CONTACTO:
-                            case CANCELAR_CONTACTO:
-                                Log.e(TAGGER, "[DENEGAR CONTACTO]");
+                            case CANCELAR_ENVIO_SOLICITUD:
+                                Log.e(TAGGER, "[DENEGAR CONTACTO][CANCELAR_ENVIO_SOLICITUD]");
                                 try (Realm realm = Realm.getDefaultInstance()) {
                                     realm.executeTransaction(new Realm.Transaction() {
                                         @Override
@@ -280,21 +288,22 @@ public class Common extends Application {
                                                 if (contact != null) {
                                                     contact.deleteFromRealm();
                                                     Log.e(TAGGER, "Actualizando...");
+
+
                                                 }
                                                 // TODO: REFRESCAR VISTA acepto la persona
                                             } catch (JSONException e) {
                                                 e.printStackTrace();
                                             }
-
                                         }
                                     });
-
+                                } finally {
+                                    notifyUserContactView(obj.getString("id_user_from"));
                                 }
-//                                Log.e(TAGGER, obj.getString("id_user_from") + " ha retirado su solicitud");
-//                                updateRequestContact(obj.getString("id_user_from"), false);
                                 break;
 
                         }
+
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -689,4 +698,14 @@ public class Common extends Application {
         return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
+    private static void notifyUserContactView(String userFrom) {
+        Intent intent = new Intent("RELOAD_SOLICITUDES");
+
+        if (getClientId().equals(userFrom)) {
+            intent.putExtra("TYPE", ContactosActivity.access.getTIPO_ENVIADAS());
+        } else {
+            intent.putExtra("TYPE", ContactosActivity.access.getTIPO_PENDIENTES());
+        }
+        LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
+    }
 }
