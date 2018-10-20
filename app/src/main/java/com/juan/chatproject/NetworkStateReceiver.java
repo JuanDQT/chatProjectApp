@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+// MARK: Probablemente se elimine esta clase, a veces ejecuta dos veces el metodo conexion
 public class NetworkStateReceiver extends BroadcastReceiver {
 
     private ConnectivityManager mManager;

@@ -26,11 +26,17 @@
             android:name=".ChatWindowActivity"
             android:launchMode="singleTop"
             android:theme="@style/AppThemeNoToolbar" />
-        <activity android:name=".MainActivity" />
+        <activity
+            android:name=".MainActivity"
+            android:theme="@style/AppThemeNoToolbar" />
 
         <service android:name=".MyService" />
 
-        <activity android:name=".ContactosList"></activity>
+        <activity android:name=".ContactosSearchActivity" />
+        <activity
+            android:name=".ContactosActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

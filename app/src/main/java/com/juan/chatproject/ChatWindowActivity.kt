@@ -188,6 +188,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
     override fun onResume() {
         super.onResume()
+        Common.clearNotifications()
         Common.setAppForeground(true)
         Common.setActivityInMain(false)
     }

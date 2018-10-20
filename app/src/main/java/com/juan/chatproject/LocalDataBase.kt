@@ -4,6 +4,7 @@ import android.content.Intent
 import android.icu.lang.UScript
 import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
+import com.juan.chatproject.chat.Contact
 import com.juan.chatproject.chat.Message
 import com.juan.chatproject.chat.User
 import io.realm.Realm
@@ -40,7 +41,6 @@ class LocalDataBase {
         fun updateUsers(realm: Realm, list: List<User>) {
             realm.executeTransaction {
                 for (item in list) {
-//                    it.insert(item)
                     it.copyToRealmOrUpdate(item)
                 }
             }
@@ -49,10 +49,31 @@ class LocalDataBase {
             print("data: $data")
         }
 
-        fun getAllUsers(realm: Realm, exceptUser: String = Common.getClientId()): List<User> {
+        fun getAllUsers(realm: Realm, exceptUser: String = Common.getClientId()): ArrayList<User> {
 
+            var response: ArrayList<User> = arrayListOf()
 
-            return ArrayList(realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", false).and().equalTo("available", true).findAll())
+            val contacts = realm.where(Contact::class.java).equalTo("status", "A").findAll()
+
+            if (contacts.count() > 0) {
+                val ids = contacts.filter { f -> f.getIdUserFrom() == exceptUser }.map { m -> m.getIdUserTo() }.union(contacts.filter { f -> f.getIdUserTo() == exceptUser }.map { m -> m.getIdUserFrom() })
+
+                Log.e(TAGGER, "ids a cargar!!: " + ids)
+
+                response = ArrayList(realm.where(User::class.java).`in`("id", ids.toTypedArray()).and().equalTo("banned", false).and().findAll())
+
+                return response
+            }
+
+            return response
+//            return ArrayList(realm.where(User::class.java).notEqualTo("id", exceptUser).and().equalTo("banned", false).and().findAll())
+        }
+
+        fun getUsersById(ids: List<String>): ArrayList<User> {
+
+            Realm.getDefaultInstance().use {
+                return ArrayList(it.copyFromRealm(it.where(User::class.java).`in`("id", ids.toTypedArray()).findAll()))
+            }
         }
 
         fun saveMessage(realm: Realm, message: Message): Int {
@@ -72,6 +93,17 @@ class LocalDataBase {
 //            Thread.sleep(2000)
             val m = realm.where(Message::class.java).equalTo("id", id).findFirst()
             return m
+        }
+
+        fun getUserIdsSentOrGet(type: String): List<String>? {
+
+            Realm.getDefaultInstance().use {
+                if (type == ContactosActivity.TIPO_ENVIADAS) {
+                    return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_from", Common.getClientId()).and().equalTo("status", "P").findAll())?.map { item -> item.getIdUserTo() }
+                } else {
+                    return it.copyFromRealm(it.where(Contact::class.java).equalTo("id_user_to", Common.getClientId()).and().equalTo("status", "P").findAll())?.map { item -> item.getIdUserFrom() }
+                }
+            }
         }
 
         fun getLastMessage(realm: Realm, users: RealmResults<User>): HashMap<String, List<String>> {
@@ -170,6 +202,24 @@ class LocalDataBase {
                     m.setIdServidor(idServer)
                     r.insertOrUpdate(m)
                 }
+            }
+        }
+
+        fun insertContacts(realm: Realm, list: List<Contact>) {
+
+            realm.executeTransaction {
+
+                it.delete(Contact::class.java)
+
+                for (item in list) {
+                    it.insert(item)
+                }
+            }
+        }
+
+        fun insertUser(user: User) {
+            Realm.getDefaultInstance().executeTransaction {
+                it.insertOrUpdate(user)
             }
         }
     }

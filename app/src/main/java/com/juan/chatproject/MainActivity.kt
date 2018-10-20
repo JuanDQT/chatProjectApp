@@ -7,20 +7,18 @@ import android.os.Bundle
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
-import android.view.Menu
 import android.widget.TextView
 import com.juan.chatproject.chat.User
 import com.squareup.picasso.Picasso
 import com.thetechnocafe.gurleensethi.liteutils.RecyclerAdapterUtil
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.activity_main.*
-import android.view.MenuItem
 import android.view.View
 import io.realm.Realm
 import io.realm.annotations.Ignore
 import android.content.IntentFilter
 
-class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateReceiverListener {
+class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     val TAGGER = "TAGGER"
     var allUsers: ArrayList<User> = arrayListOf()
@@ -35,7 +33,8 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         super.onCreate(savedInstanceState)
 
         networkStateReceiver = NetworkStateReceiver(this@MainActivity)
-        networkStateReceiver?.addListener(this)
+        // TODO: IS NOT NECESSARY ANYMORE, WEBSOCKET AUTOMATICALLY CONNECT OR DISCONNECT TO THE SERVICE DATA
+//        networkStateReceiver?.addListener(this)
         this.registerReceiver(networkStateReceiver, IntentFilter(android.net.ConnectivityManager.CONNECTIVITY_ACTION))
 
         realm = Realm.getDefaultInstance()
@@ -56,8 +55,12 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
             }
         }
         setupAdapter()
-        loadContacts()
+
+        ibSearch.setOnClickListener(this)
+        ibContacts.setOnClickListener(this)
     }
+
+
 
     val getNewMessage = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -122,7 +125,7 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
 
     fun loadContacts() {
         realm?.let {
-            val data = LocalDataBase.getAllUsers(it) as ArrayList<User>
+            val data = LocalDataBase.getAllUsers(it)
             allUsers.clear()
             allUsers.addAll(data)
             adapter?.notifyDataSetChanged()
@@ -131,8 +134,11 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
 
     override fun onResume() {
         super.onResume()
+        Common.clearNotifications()
+
         Common.setAppForeground(true)
         Common.setActivityInMain(true)
+        loadContacts()
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_ROW_MESSAGE"))
         LocalBroadcastManager.getInstance(this@MainActivity).registerReceiver(getUsers, IntentFilter("MAIN_ACTIVITY_GET_CONTACTS"))
 
@@ -191,38 +197,17 @@ class MainActivity : AppCompatActivity(), NetworkStateReceiver.NetworkStateRecei
         realm?.close()
         Common.setAppForeground(false)
         Common.setActivityInMain(false)
-        networkStateReceiver?.removeListener(this);
+//        networkStateReceiver?.removeListener(this);
         this.unregisterReceiver(networkStateReceiver);
     }
 
-    override fun onNetworkAvailable() {
-        // TODO: Quizas en un futuro enviarlos todos de golpe y no 1 x 1
-        //Common.sendAllMessagesPending(realm)
-        //Log.d(TAGGER, "Se ha recuperado la conexion a la red")
-    }
-
-    override fun onNetworkUnavailable() {
-        Log.d(TAGGER, "Se ha perdido la conexion a la red")
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        val inflater = menuInflater
-        inflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        return when (item?.itemId) {
-            R.id.itReload -> {
-//                Common.requestAllChatsAvailable()
-                true
+    override fun onClick(v: View?) {
+        var intent = Intent(this@MainActivity, ContactosActivity::class.java)
+        when (v?.id) {
+            R.id.ibSearch -> {
+                intent = Intent(this@MainActivity, ContactosSearchActivity::class.java)
             }
-            R.id.itSearch -> {
-                startActivity(Intent(this@MainActivity, ContactosList::class.java))
-                true
-            }
-
-            else -> super.onOptionsItemSelected(item)
         }
+        startActivity(intent)
     }
 }
