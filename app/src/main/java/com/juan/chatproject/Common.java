@@ -32,9 +32,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -256,6 +254,11 @@ public class Common extends Application {
                                                     Log.e(TAGGER, "Actualizando...");
                                                 }
 
+                                                User u = realm.where(User.class).equalTo("id", contact.getIdUserFrom().equals(getClientId()) ? contact.getIdUserTo() : getClientId()).findFirst();
+                                                if (u != null && u.getId().equals(obj.getString("id_user_from"))) {
+                                                    showNotificationContact(u.getName(), R.string.solicitud_aceptada);
+                                                }
+
                                             } catch (JSONException e) {
                                                 e.printStackTrace();
                                             }
@@ -311,8 +314,10 @@ public class Common extends Application {
                                                 if (obj.getString("id_user_to").equals(getClientId()) && obj.has("user")) {
                                                     for (User u : getUsersFromJSONArray(obj.getJSONArray("user"))) {
                                                         realm.insertOrUpdate(u);
+                                                        showNotificationContact(u.getName(), R.string.solicitud_nueva);
                                                     }
                                                 }
+
                                             } catch (JSONException e) {
                                                 e.printStackTrace();
                                             }
@@ -513,7 +518,10 @@ public class Common extends Application {
             LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
         } else {
             // Aplicacion cerrada o en background
-            showNotification(obj.getString("from"), obj.getString("message"));
+            User u = realm.where(User.class).equalTo("id", obj.getString("from")).findFirst();
+            if (u != null) {
+                showNotificationMessage(u.getName(), obj.getString("message"));
+            }
         }
     }
 
@@ -582,7 +590,7 @@ public class Common extends Application {
         return CLIENT_ID;
     }
 
-    private static void showNotification(String from, String message) {
+    private static void showNotificationMessage(String from, String message) {
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(mContext)
@@ -603,6 +611,28 @@ public class Common extends Application {
         messageIntent.putExtra("TO", from);
         messageIntent.putExtra("MESSAGE", message);
         messageIntent.putExtra("GO_CHAT_WINDOW", true);
+
+        mBuilder.setContentIntent(PendingIntent.getActivity(mContext, 0, messageIntent, 0));
+
+        NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(0, mBuilder.build());
+    }
+
+    private static void showNotificationContact(String from, int message) {
+
+        if (Common.isAppForeground())
+            return;
+
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(mContext)
+                        .setSmallIcon(R.drawable.ic_send)
+                        .setContentTitle(mContext.getString(R.string.solicitud))
+                        .setContentText(mContext.getString(message, from))
+                        .setPriority(Notification.PRIORITY_MAX)
+                        .setDefaults(Notification.DEFAULT_ALL);
+
+
+        Intent messageIntent = new Intent(mContext, message == R.string.solicitud_aceptada ? MainActivity.class : ContactosActivity.class);
 
         mBuilder.setContentIntent(PendingIntent.getActivity(mContext, 0, messageIntent, 0));
 
@@ -739,4 +769,11 @@ public class Common extends Application {
         }
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(new Intent(intent));
     }
+
+    public static void clearNotifications() {
+        NotificationManager nMgr = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nMgr != null)
+            nMgr.cancelAll();
+    }
+
 }

@@ -134,6 +134,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onResume() {
         super.onResume()
+        Common.clearNotifications()
+
         Common.setAppForeground(true)
         Common.setActivityInMain(true)
         loadContacts()

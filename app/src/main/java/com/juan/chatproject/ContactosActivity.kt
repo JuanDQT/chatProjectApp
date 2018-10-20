@@ -33,6 +33,8 @@ class ContactosActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Common.clearNotifications()
+        Common.setAppForeground(true)
         setContentView(R.layout.activity_contactos)
 
         setSupportActionBar(toolbar)
@@ -59,6 +61,12 @@ class ContactosActivity : AppCompatActivity() {
         fragments = arrayOf(fragmentPendientes, fragmentEnviadas)
     }
 
+    override fun onResume() {
+        super.onResume()
+        Common.clearNotifications()
+        Common.setAppForeground(true)
+    }
+
 
     inner class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
@@ -69,5 +77,15 @@ class ContactosActivity : AppCompatActivity() {
         override fun getCount(): Int {
             return 2
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Common.setAppForeground(false)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Common.setAppForeground(false)
     }
 }

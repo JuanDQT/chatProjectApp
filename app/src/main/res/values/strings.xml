@@ -18,4 +18,8 @@
     <string name="login">Login</string>
     <string name="no_aceptar_solicitud">No aceptar</string>
     <string name="aceptar_solicitud">Aceptar solicitud</string>
+
+    <string name="solicitud_nueva">Tienes una solicitud pendiende de %s</string>
+    <string name="solicitud_aceptada">%s ha aceptado tu solicitud</string>
+    <string name="solicitud">Solicitud</string>
 </resources>

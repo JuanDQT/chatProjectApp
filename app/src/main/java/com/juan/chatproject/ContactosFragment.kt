@@ -73,7 +73,7 @@ class ContactosFragment : Fragment() {
                 if (ForegroundCheckTask().execute(context).get()) {
                     loadSolicitudes(it)
                     Log.e(Common.TAGGER, "Dentro de foreground...")
-
+                    dialog?.dismiss()
                 }
             }
         }
@@ -155,7 +155,8 @@ class ContactosFragment : Fragment() {
 
     fun loadSolicitudes(tipo: String) {
 
-
+        // TODO: PROBAR ENVIAR SOLICITUD, Y EN LA MISMA PESTANA DESDE EL OTRO MOVIL CNACELARLA.. A VECES NO SE ACTUALIZA.
+        // EL SERIVCIO WEB PARECE FUNCIONAR BIEN, SOLO FALLA EN EL TIPO FRAGMENT..
         var ids: List<String>? = emptyList<String>()
 
         ids = LocalDataBase.getUserIdsSentOrGet(tipo)
