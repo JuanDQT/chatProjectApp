@@ -20,7 +20,6 @@ import kotlinx.android.synthetic.main.activity_chat_window.*
 
 class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreListener {
 
-    val TAGGER = "TAGGER"
     var chatAdapter: MessagesListAdapter<Message>? = null
     var cachedUsers: Array<String> = emptyArray()
     var CLIENT_ID = ""
@@ -39,8 +38,9 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
         CLIENT_ID = sharedPreferences!!.getString("FROM", "")
         TARGET_ID = intent.extras.getString("TO")
 
-        val urlImage = LocalDataBase.getAllUsers(realm = realm!!, exceptUser = CLIENT_ID).filter { p -> p.id == TARGET_ID }.first().avatar
-        Picasso.with(this@ChatWindowActivity).load(urlImage).into(profile_image)
+        LocalDataBase.getProfilePicFromIdUser(TARGET_ID)?.let {
+            Picasso.with(this@ChatWindowActivity).load(it).into(profile_image)
+        }
         // Observers
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getUserIsTyping, IntentFilter("INTENT_GET_USER_IS_TYPING"))
         LocalBroadcastManager.getInstance(this@ChatWindowActivity).registerReceiver(getNewMessage, IntentFilter("INTENT_GET_SINGLE_MESSAGE"))
@@ -106,7 +106,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
                             if (m.userFrom!!.id!!.equals(TARGET_ID)) {
                                 postMessage(m)
                                 tvWritting.visibility = View.GONE
-                                Log.e(TAGGER, "Mensaje entrada, guardamos en memoria")
+                                Log.e(Common.TAGGER, "Mensaje entrada, guardamos en memoria")
                                 r.executeTransaction {realm ->
                                     m.setFechaLectura(Date())
                                     realm.copyToRealmOrUpdate(m)
@@ -115,7 +115,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
                                 if (m.getIdServidor() != 0 && Common.getClientId() != m.userFrom!!.id)
                                     Common.notifyMessageReaded(m.getIdServidor(), Date())
                             } else {
-                                Log.e(TAGGER, "Recibodo mensaje en otra ventana")
+                                Log.e(Common.TAGGER, "Recibodo mensaje en otra ventana")
                             }
                         }
 
@@ -154,7 +154,7 @@ class ChatWindowActivity : AppCompatActivity(), MessagesListAdapter.OnLoadMoreLi
 
     override fun onLoadMore(page: Int, totalItemsCount: Int) {
         if (totalItemsCount > 10) {
-            Log.e(TAGGER, "PAGINA: " + page + " TOTAL: " + totalItemsCount)
+            Log.e(Common.TAGGER, "PAGINA: " + page + " TOTAL: " + totalItemsCount)
             realm?.let {
                 val olderMessages = LocalDataBase.access.getOlderMessages(it, TARGET_ID, lastMessageId)
 

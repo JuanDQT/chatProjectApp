@@ -520,7 +520,7 @@ public class Common extends Application {
             // Aplicacion cerrada o en background
             User u = realm.where(User.class).equalTo("id", obj.getString("from")).findFirst();
             if (u != null) {
-                showNotificationMessage(u.getName(), obj.getString("message"));
+                showNotificationMessage(u.getName(), u.getId(), obj.getString("message"));
             }
         }
     }
@@ -590,8 +590,7 @@ public class Common extends Application {
         return CLIENT_ID;
     }
 
-    private static void showNotificationMessage(String from, String message) {
-
+    private static void showNotificationMessage(String from, String id, String message) {
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(mContext)
                         .setSmallIcon(R.drawable.ic_send)
@@ -608,7 +607,7 @@ public class Common extends Application {
 
         Intent messageIntent = new Intent(mContext, (Common.isActivityInMain()) ? ChatWindowActivity.class : MainActivity.class);
 
-        messageIntent.putExtra("TO", from);
+        messageIntent.putExtra("TO", id);
         messageIntent.putExtra("MESSAGE", message);
         messageIntent.putExtra("GO_CHAT_WINDOW", true);
 

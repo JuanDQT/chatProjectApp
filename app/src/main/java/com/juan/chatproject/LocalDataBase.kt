@@ -22,8 +22,6 @@ class LocalDataBase {
 
     companion object access {
 
-        val TAGGER = "TAGGER"
-
         fun getOlderMessages(realm: Realm, userTalking: String, currentIndex: Int? = null): List<Message> {
 
             currentIndex?.let {
@@ -58,7 +56,7 @@ class LocalDataBase {
             if (contacts.count() > 0) {
                 val ids = contacts.filter { f -> f.getIdUserFrom() == exceptUser }.map { m -> m.getIdUserTo() }.union(contacts.filter { f -> f.getIdUserTo() == exceptUser }.map { m -> m.getIdUserFrom() })
 
-                Log.e(TAGGER, "ids a cargar!!: " + ids)
+                Log.e(Common.TAGGER, "ids a cargar!!: " + ids)
 
                 response = ArrayList(realm.where(User::class.java).`in`("id", ids.toTypedArray()).and().equalTo("banned", false).and().findAll())
 
@@ -115,10 +113,10 @@ class LocalDataBase {
 //                val lastMessage = realm.where(Message::class.java).equalTo("userFrom.id", u.id).sort("id", Sort.ASCENDING).findFirst()
                 val lastMessage = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findFirst()
                 lastMessage?.let {
-                    Log.i(TAGGER, "Ultimo mensaje: " + it.text)
+                    Log.i(Common.TAGGER, "Ultimo mensaje: " + it.text)
                     if (it.userFrom!!.id.equals(u.id) && it.getFechaLectura() == null) {
                         // Si el ultimo mensaje no lo has leido, buscamos mas no leidos. Limite 5
-                        Log.e(TAGGER, "El ultimo mensaje esta sin leer")
+                        Log.e(Common.TAGGER, "El ultimo mensaje esta sin leer")
                         val lastMessagesNotReaded = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findAll().take(4)
                         var totalMensajesNoLeidos = 0
                         // Validad que sean los ultimos... Aplicar condicion de fechalectura = null y from = u.id
@@ -127,14 +125,14 @@ class LocalDataBase {
 
                             if (m.getFechaLectura() == null && it.userFrom!!.id.equals(u.id)) {
                                 totalMensajesNoLeidos += 1
-                                Log.e(TAGGER, "Mensaje sin leer: " + m.text)
+                                Log.e(Common.TAGGER, "Mensaje sin leer: " + m.text)
                             }
 
                             if (!it.userFrom!!.id.equals(u.id))
                                 break
                         }
 
-                        Log.e(TAGGER, "Total mensajes sin leer: " + totalMensajesNoLeidos)
+                        Log.e(Common.TAGGER, "Total mensajes sin leer: " + totalMensajesNoLeidos)
 
                         lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, totalMensajesNoLeidos.toString())
                     } else {
@@ -154,10 +152,10 @@ class LocalDataBase {
             for (u in users) {
                 val lastMessage = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findFirst()
                 lastMessage?.let {
-                    Log.i(TAGGER, "Ultimo mensaje: " + it.text)
+                    Log.i(Common.TAGGER, "Ultimo mensaje: " + it.text)
                     if (it.userFrom!!.id.equals(u.id) && it.getFechaLectura() == null) {
                         // Si el ultimo mensaje no lo has leido, buscamos mas no leidos. Limite 5
-                        Log.e(TAGGER, "El ultimo mensaje esta sin leer")
+                        Log.e(Common.TAGGER, "El ultimo mensaje esta sin leer")
                         val lastMessagesNotReaded = realm.where(Message::class.java).equalTo("userToId", u.id).or().equalTo("userFrom.id", u.id).sort("id", Sort.DESCENDING).findAll().take(4)
                         var totalMensajesNoLeidos = 0
 
@@ -174,11 +172,11 @@ class LocalDataBase {
 
                             if (m.getFechaLectura() == null) {
                                 totalMensajesNoLeidos += 1
-                                Log.e(TAGGER, "Mensaje sin leer: " + m.text)
+                                Log.e(Common.TAGGER, "Mensaje sin leer: " + m.text)
                             }
                         }
 
-                        Log.e(TAGGER, "Total mensajes sin leer: " + totalMensajesNoLeidos)
+                        Log.e(Common.TAGGER, "Total mensajes sin leer: " + totalMensajesNoLeidos)
 
                         lastUsersMessages[u.id!!] = listOf(lastMessage.text!!, totalMensajesNoLeidos.toString())
                     } else {
@@ -220,6 +218,25 @@ class LocalDataBase {
         fun insertUser(user: User) {
             Realm.getDefaultInstance().executeTransaction {
                 it.insertOrUpdate(user)
+            }
+        }
+
+        fun getProfilePicFromIdUser(idUser: String): String? {
+            Realm.getDefaultInstance().use {
+                Log.e(Common.TAGGER, "***Dentro defaultInstance")
+
+                Log.e(Common.TAGGER, "***ID user: " + idUser!!)
+
+                if (it == null)
+                    Log.e(Common.TAGGER, "***realm is null")
+
+                var user = it.copyFromRealm(it.where(User::class.java).equalTo("id", idUser).findFirst()!!)
+
+                if (user == null)
+                    Log.e(Common.TAGGER, "*** Objeto es nullo")
+
+
+                return it.copyFromRealm(it.where(User::class.java).equalTo("id", idUser).findFirst()!!).avatar
             }
         }
     }

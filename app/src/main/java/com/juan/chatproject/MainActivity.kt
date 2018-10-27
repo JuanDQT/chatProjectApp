@@ -42,8 +42,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         startService(Intent(this@MainActivity, MyService::class.java))
         @Ignore
         rv.layoutManager = LinearLayoutManager(this@MainActivity)
-        intent?.let {
-            it.extras?.let {
+        intent?.let { int ->
+            int.extras?.let {
                 if (it.getBoolean(GO_CHAT_WINDOW)) {
                     val intent = Intent(this@MainActivity, ChatWindowActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
