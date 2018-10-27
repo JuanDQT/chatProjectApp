@@ -640,9 +640,9 @@ public class Common extends Application {
         notificationManager.notify(0, mBuilder.build());
     }
 
-    public static void setAppForeground(Boolean isActive) {
+    public static void setAppForeground(Boolean isForeground) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putBoolean(SHARED_PREFERENCES_ACTIVITY_ACTIVE, isActive);
+        editor.putBoolean(SHARED_PREFERENCES_ACTIVITY_ACTIVE, isForeground);
         editor.apply();
 
         if (socket == null)
@@ -650,8 +650,8 @@ public class Common extends Application {
 
         try {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("FROM", getClientId());
-            jsonObject.put("LAST_SEEN", isActive);
+            jsonObject.put("id_user_from", getClientId());
+            jsonObject.put("is_foreground", isForeground);
             socket.emit("CLIENT_SET_LAST_SEEN", jsonObject);
         } catch (JSONException e) {
             e.printStackTrace();

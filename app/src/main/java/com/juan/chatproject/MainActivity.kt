@@ -20,7 +20,6 @@ import android.content.IntentFilter
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
 
-    val TAGGER = "TAGGER"
     var allUsers: ArrayList<User> = arrayListOf()
     val GO_CHAT_WINDOW = "GO_CHAT_WINDOW"
     var sharedPreferences: SharedPreferences? = null
@@ -68,7 +67,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             if (Common.isActivityInMain()) {
                 intent?.let { int ->
                     val chats = int.getSerializableExtra("DATA") as HashMap<String, List<String>>
-                        Log.e(TAGGER, "Nos llego data")
+                        Log.e(Common.TAGGER, "Nos llego data")
 
                     if (chats.count() > 0) {
                         for (chat in chats) {
@@ -147,7 +146,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         val chats = LocalDataBase.getLastMessage(realm, realm.where(User::class.java).equalTo("banned", false).notEqualTo("id", Common.getClientId()).findAll())
 
-        Log.e(TAGGER, "Mesajes nuevos total: " + chats)
+        Log.e(Common.TAGGER, "Mesajes nuevos total: " + chats)
 
 
         // Se podria prescindir?
@@ -173,7 +172,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 }
                 .addClickListener { item, position ->
-                    Log.e(TAGGER, "Quieres hablar con: " + allUsers[position].name + "(" + allUsers[position].id + ")")
+                    Log.e(Common.TAGGER, "Quieres hablar con: " + allUsers[position].name + "(" + allUsers[position].id + ")")
                     val intent = Intent(this@MainActivity, ChatWindowActivity::class.java)
                     intent.putExtra("TO", allUsers[position].id)
                     startActivity(intent)
