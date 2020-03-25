@@ -60,6 +60,7 @@ public class Common extends Application {
 
     public static final String FIRST_ON = "FIRST_ON";
 
+    // 25/03/2020: Now, we are gonna use KotlinCourtines
     @Override
     public void onCreate() {
         super.onCreate();
